@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Dashboard - AGV Finance{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tachometer-alt me-2"></i>Employee Dashboard</h2>
+                <div class="text-muted">
+                    Welcome, {{ session.userinfo.name or session.userinfo.email }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Loans</h6>
+                            <h3 class="mb-0">₹45,67,890</h3>
+                            <small>152 loans</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-contract fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Collections Today</h6>
+                            <h3 class="mb-0">₹2,34,567</h3>
+                            <small>28 payments</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-coins fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Approvals</h6>
+                            <h3 class="mb-0">23</h3>
+                            <small>New applications</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Customers</h6>
+                            <h3 class="mb-0">1,284</h3>
+                            <small>Active accounts</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('gold') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-coins fa-2x d-block mb-2"></i>
+                                Gold Calculator
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('emi') }}" class="btn btn-outline-success w-100 py-3">
+                                <i class="fas fa-calculator fa-2x d-block mb-2"></i>
+                                EMI Calculator
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('customers') }}" class="btn btn-outline-info w-100 py-3">
+                                <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                                New Customer
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('loans') }}" class="btn btn-outline-warning w-100 py-3">
+                                <i class="fas fa-file-contract fa-2x d-block mb-2"></i>
+                                Loan Management
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary w-100 py-3">
+                                <i class="fas fa-chart-bar fa-2x d-block mb-2"></i>
+                                Reports
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('gold_cov') }}" class="btn btn-outline-dark w-100 py-3">
+                                <i class="fas fa-exchange-alt fa-2x d-block mb-2"></i>
+                                Gold Conversion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user me-2"></i>Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img src="{{ session.userinfo.picture or 'https://via.placeholder.com/100' }}" 
+                             class="rounded-circle mb-2" width="80" height="80" alt="Profile">
+                        <h6>{{ session.userinfo.name or 'Employee' }}</h6>
+                        <small class="text-muted">{{ session.userinfo.email }}</small>
+                    </div>
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Profile
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
