@@ -4,8 +4,8 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 import uuid
 from typing import Optional
+from app import db
 
-db = SQLAlchemy()
 
 
 class Customer(db.Model):
@@ -18,8 +18,8 @@ class Customer(db.Model):
     address: Mapped[Optional[str]] = mapped_column(Text)
     aadhar_number: Mapped[Optional[str]] = mapped_column(String(12))
     pan_number: Mapped[Optional[str]] = mapped_column(String(10))
-    biometric_hash: Mapped[Optional[str]] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(20), default='active')
+    biometric_data: Mapped[Optional[str]] = mapped_column(Text)
+    #status: Mapped[str] = mapped_column(String(20), default='active')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -44,7 +44,7 @@ class Loan(db.Model):
     loan_type: Mapped[str] = mapped_column(String(50), default='gold')
     collateral_details: Mapped[Optional[dict]] = mapped_column(JSON)
     document_urls: Mapped[Optional[dict]] = mapped_column(JSON)
-    status: Mapped[str] = mapped_column(String(20), default='active')
+    #status: Mapped[str] = mapped_column(String(20), default='active')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
