@@ -5,7 +5,7 @@ from authlib.integrations.flask_client import OAuth
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, redirect, render_template, session, url_for, request, flash
 from functools import wraps
-from flask_sqlalchemy import SQLAlchemy 
+from extensions import db 
 # Load environment variables
 ENV_FILE = find_dotenv()
 if ENV_FILE:
@@ -19,8 +19,7 @@ app.secret_key = env.get("APP_SECRET_KEY")
 app.config.from_object('config.Config')
 
 # --- INITIALIZE DATABASE ---
-# 2. CREATE and INITIALIZE the db object here
-db = SQLAlchemy()
+# Initialize the db object with the app
 db.init_app(app)
 # ----------------------------
 
@@ -36,7 +35,8 @@ oauth.register(
     server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration'
 )
 
-from models import Customer
+# Remove the top-level import to avoid circular dependency
+# Models will be imported locally where needed
 
 # Authentication decorator
 def requires_auth(f):

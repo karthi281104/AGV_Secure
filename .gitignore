@@ -3,3 +3,12 @@
 *.iml
 .directory
 .idea
+
+# Database files
+*.db
+agv_secure.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class

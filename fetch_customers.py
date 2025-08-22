@@ -1,7 +1,8 @@
 # fetch_customers.py
 
 from app import app  # Import the Flask app instance from your app.py file
-from models import db, Customer  # Import the db instance and Customer model from models.py
+from extensions import db  # Import the db instance from extensions.py
+from models import Customer  # Import Customer model from models.py
 
 def get_all_customers():
     """
