@@ -1,10 +1,9 @@
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Numeric, DateTime, Text, Boolean, JSON, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 import uuid
 from typing import Optional
-from app import db
+from extensions import db
 
 
 
