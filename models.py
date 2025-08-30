@@ -1,4 +1,5 @@
 from sqlalchemy import String, Integer, Numeric, DateTime, Text, Boolean, JSON, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 import uuid
@@ -10,7 +11,7 @@ from extensions import db
 class Customer(db.Model):
     __tablename__ = 'customers'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str] = mapped_column(String(15), unique=True, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String(100))
@@ -32,8 +33,8 @@ class Customer(db.Model):
 class Loan(db.Model):
     __tablename__ = 'loans'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    customer_id: Mapped[str] = mapped_column(String(36), ForeignKey('customers.id'), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('customers.id'), nullable=False)
     loan_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     principal_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     interest_rate: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
@@ -58,8 +59,8 @@ class Loan(db.Model):
 class Payment(db.Model):
     __tablename__ = 'payments'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    loan_id: Mapped[str] = mapped_column(String(36), ForeignKey('loans.id'), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    loan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('loans.id'), nullable=False)
     payment_number: Mapped[str] = mapped_column(String(20), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     principal_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
@@ -81,7 +82,7 @@ class Payment(db.Model):
 class Employee(db.Model):
     __tablename__ = 'employees'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     auth0_user_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
