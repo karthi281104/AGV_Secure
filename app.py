@@ -255,5 +255,137 @@ def internal_error(error):
     return render_template("500.html"), 500
 
 
+# Add these routes to your app.py file
+
+@app.route("/loans/new")
+@requires_auth
+def new_loan():
+    """New loan page with customer selection"""
+    return render_template("new_loan.html", userinfo=session.get('profile'))
+
+
+@app.route("/loans/search-customer")
+@requires_auth
+def search_customer():
+    """API endpoint to search for customers"""
+    query = request.args.get('q', '')
+
+    if len(query) < 3:
+        return jsonify({"error": "Query must be at least 3 characters"}), 400
+
+    try:
+        # Search for customers by name, mobile or father's name
+        customers = Customer.query.filter(
+            or_(
+                Customer.name.ilike(f"%{query}%"),
+                Customer.mobile.ilike(f"%{query}%"),
+                Customer.father_name.ilike(f"%{query}%")
+            )
+        ).limit(10).all()
+
+        results = []
+        for customer in customers:
+            results.append({
+                "id": str(customer.id),
+                "name": customer.name,
+                "father_name": customer.father_name or "Not provided",
+                "mobile": customer.mobile,
+                "address": customer.address or "Not provided"
+            })
+
+        return jsonify({"customers": results})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/loans/create", methods=["POST"])
+@requires_auth
+def create_loan():
+    """Create a new loan"""
+    try:
+        # Get customer ID
+        customer_id = request.form.get('customer_id')
+        if not customer_id:
+            flash("Customer selection is required", "danger")
+            return redirect(url_for('new_loan'))
+
+        # Get form data
+        principal_amount = request.form.get('principal_amount')
+        interest_rate = request.form.get('interest_rate')
+        tenure_months = request.form.get('tenure_months')
+        loan_type = request.form.get('loan_type')
+
+        # Surety information
+        surety_name = request.form.get('surety_name')
+        surety_mobile = request.form.get('surety_mobile')
+        surety_aadhar = request.form.get('surety_aadhar')
+        surety_photo = request.files.get('surety_photo')
+
+        # Handle bond paper upload
+        bond_paper = request.files.get('bond_paper')
+        bond_paper_url = None
+        document_urls = {}
+
+        if bond_paper and bond_paper.filename:
+            filename = secure_filename(f"bond_{uuid.uuid4()}_{bond_paper.filename}")
+            bond_paper_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            bond_paper.save(bond_paper_path)
+            bond_paper_url = f"uploads/{filename}"
+            document_urls["bond_paper"] = bond_paper_url
+
+        # Handle surety photo upload
+        surety_photo_url = None
+        if surety_photo and surety_photo.filename:
+            filename = secure_filename(f"surety_{uuid.uuid4()}_{surety_photo.filename}")
+            surety_photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            surety_photo.save(surety_photo_path)
+            surety_photo_url = f"uploads/{filename}"
+            document_urls["surety_photo"] = surety_photo_url
+
+        # Calculate maturity date
+        disbursed_date = datetime.utcnow()
+        maturity_date = disbursed_date + relativedelta(months=int(tenure_months))
+
+        # Create loan number - format: GL-YYYYMMDD-XXXX (GL=Gold Loan, followed by date and 4 random digits)
+        loan_number_prefix = f"{loan_type[0].upper()}L-{disbursed_date.strftime('%Y%m%d')}"
+        random_suffix = ''.join(random.choices(string.digits, k=4))
+        loan_number = f"{loan_number_prefix}-{random_suffix}"
+
+        # Store surety details in collateral_details
+        collateral_details = {
+            "surety": {
+                "name": surety_name,
+                "mobile": surety_mobile,
+                "aadhar": surety_aadhar,
+                "photo_url": surety_photo_url
+            }
+        }
+
+        # Create new loan
+        new_loan = Loan(
+            customer_id=customer_id,
+            loan_number=loan_number,
+            principal_amount=principal_amount,
+            interest_rate=interest_rate,
+            tenure_months=tenure_months,
+            disbursed_date=disbursed_date,
+            maturity_date=maturity_date,
+            loan_type=loan_type,
+            collateral_details=collateral_details,
+            document_urls=document_urls
+        )
+
+        db.session.add(new_loan)
+        db.session.commit()
+
+        flash("Loan created successfully!", "success")
+        return redirect(url_for('loans'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error creating loan: {str(e)}", "danger")
+        return redirect(url_for('new_loan'))
+
 if __name__ == '__main__':
     app.run(host="localhost", port=5000, debug=True)

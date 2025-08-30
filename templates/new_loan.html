@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Loan - AGV Finance & Loans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .loan-form {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #495057;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        .input-help {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        #customerSearchResults {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .customer-item {
+            cursor: pointer;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .customer-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .selected-customer {
+            background-color: #e2f3ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #b8daff;
+        }
+
+        #fingerprint-capture {
+            border: 2px dashed #ddd;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+
+        #fingerprint-result {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="fas fa-university"></i>
+                <span>AGV Finance</span>
+            </div>
+            <div class="sidebar-subtitle">Employee Portal</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/dashboard" class="nav-link">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/customers" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="/loans" class="nav-link active">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Loans</span>
+            </a>
+            <a href="/reports" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+            <a href="/settings" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" id="content">
+        <!-- Topbar -->
+        <nav class="navbar navbar-expand-lg bg-white">
+            <div class="container-fluid">
+                <button id="sidebarToggle" class="navbar-toggler" type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="topbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="{{ userinfo.picture }}" alt="Profile" class="rounded-circle me-2" width="30">
+                                {{ userinfo.name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="content-wrapper">
+            <div class="container-fluid">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="page-title"><i class="fas fa-plus-circle me-2"></i> New Loan</h1>
+                    <a href="/loans" class="btn btn-outline-primary"><i class="fas fa-arrow-left me-1"></i> Back to Loans</a>
+                </div>
+
+                <form action="{{ url_for('create_loan') }}" method="POST" enctype="multipart/form-data" class="loan-form">
+                    <!-- Customer Selection Section -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user me-2"></i>Select Customer
+                        </h3>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="customerSearch" placeholder="Search by customer name, mobile, or father's name...">
+                                <button class="btn btn-primary" type="button" id="searchCustomerBtn">
+                                    <i class="fas fa-search me-1"></i> Search
+                                </button>
+                            </div>
+                            <div class="input-help">Type at least 3 characters to search</div>
+                        </div>
+
+                        <div id="customerSearchResults" class="mb-3 border rounded p-2 d-none">
+                            <!-- Search results will be populated here -->
+                            <div class="text-center py-3" id="loadingIndicator">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Searching customers...</p>
+                            </div>
+                            <div id="resultsList"></div>
+                            <p class="text-center d-none" id="noResults">No customers found matching your search.</p>
+                        </div>
+
+                        <div id="selectedCustomer" class="selected-customer d-none">
+                            <input type="hidden" name="customer_id" id="customerIdInput">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> <span id="customerName"></span></p>
+                                    <p><strong>Father's Name:</strong> <span id="fatherName"></span></p>
+                                    <p><strong>Mobile:</strong> <span id="customerMobile"></span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Address:</strong> <span id="customerAddress"></span></p>
+                                    <p><strong>ID:</strong> <span id="customerId" class="text-muted small"></span></p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="changeCustomer">
+                                <i class="fas fa-exchange-alt me-1"></i> Change Customer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loan Details Section -->
+                    <div class="form-section" id="loanDetailsSection">
+                        <h3 class="section-title">
+                            <i class="fas fa-money-bill-wave me-2"></i>Loan Details
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loanAmount" class="form-label">Loan Amount (₹) <span class="required">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="loanAmount" name="principal_amount" required min="1000" step="100">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="interestRate" class="form-label">Interest Rate (%) <span class="required">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="interestRate" name="interest_rate" required min="1" max="36" step="0.01">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tenureMonths" class="form-label">Tenure (Months) <span class="required">*</span></label>
+                                <input type="number" class="form-control" id="tenureMonths" name="tenure_months" required min="1" max="60">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="loanType" class="form-label">Loan Type <span class="required">*</span></label>
+                                <select class="form-select" id="loanType" name="loan_type" required>
+                                    <option value="gold">Gold Loan</option>
+                                    <option value="personal">Personal Loan</option>
+                                    <option value="business">Business Loan</option>
+                                    <option value="vehicle">Vehicle Loan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="bondPaper" class="form-label">Bond Paper (PDF) <span class="required">*</span></label>
+                                <input type="file" class="form-control" id="bondPaper" name="bond_paper" accept="application/pdf" required>
+                                <div class="input-help">Upload signed bond paper document (Max size: 10MB)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Surety Information Section -->
+                    <div class="form-section" id="suretySection">
+                        <h3 class="section-title">
+                            <i class="fas fa-user-shield me-2"></i>Surety Information
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="suretyName" class="form-label">Surety Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="suretyName" name="surety_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="suretyMobile" class="form-label">Surety Mobile Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="suretyMobile" name="surety_mobile" pattern="[0-9]{10}" required>
+                                <div class="input-help">Enter 10-digit mobile number</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="suretyAadhar" class="form-label">Surety Aadhar Number <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="suretyAadhar" name="surety_aadhar" pattern="[0-9]{4}[\s]?[0-9]{4}[\s]?[0-9]{4}" required>
+                                <div class="input-help">Format: XXXX XXXX XXXX</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="suretyPhoto" class="form-label">Surety Photo <span class="required">*</span></label>
+                                <input type="file" class="form-control" id="suretyPhoto" name="surety_photo" accept="image/*" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fingerprint Section -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-fingerprint me-2"></i>Fingerprint Verification
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="fingerprint-capture">
+                                    <div class="text-center">
+                                        <i class="fas fa-fingerprint fa-4x mb-3 text-muted"></i>
+                                        <h5>Capture Fingerprint</h5>
+                                        <button type="button" class="btn btn-primary mt-3" id="captureFingerprint">
+                                            <i class="fas fa-fingerprint me-1"></i> Capture Fingerprint
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="fingerprint-result">
+                                    <div class="status-box mb-3 p-3 rounded border">
+                                        <span id="fingerprintStatus">Not captured</span>
+                                    </div>
+                                    <input type="hidden" name="fingerprint_data" id="fingerprintData">
+                                    <div class="input-help">
+                                        Connect USB fingerprint device and click "Capture Fingerprint" to scan.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-md-2">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Create Loan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('content').classList.toggle('expanded');
+            });
+
+            // Customer search functionality
+            const searchInput = document.getElementById('customerSearch');
+            const searchBtn = document.getElementById('searchCustomerBtn');
+            const searchResults = document.getElementById('customerSearchResults');
+            const resultsList = document.getElementById('resultsList');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const noResults = document.getElementById('noResults');
+            const selectedCustomer = document.getElementById('selectedCustomer');
+            const changeCustomerBtn = document.getElementById('changeCustomer');
+            const loanDetailsSection = document.getElementById('loanDetailsSection');
+            const suretySection = document.getElementById('suretySection');
+
+            // Initially hide the loan details until a customer is selected
+            loanDetailsSection.style.opacity = '0.5';
+            loanDetailsSection.style.pointerEvents = 'none';
+            suretySection.style.opacity = '0.5';
+            suretySection.style.pointerEvents = 'none';
+
+            // Search button click handler
+            searchBtn.addEventListener('click', function() {
+                const query = searchInput.value.trim();
+                if (query.length < 3) {
+                    alert('Please enter at least 3 characters to search');
+                    return;
+                }
+
+                // Show search results container and loading indicator
+                searchResults.classList.remove('d-none');
+                loadingIndicator.classList.remove('d-none');
+                resultsList.innerHTML = '';
+                noResults.classList.add('d-none');
+
+                // Simulate API call to search customers (replace with actual API call)
+                setTimeout(function() {
+                    // This is a mock response - replace with actual API call
+                    const mockCustomers = [
+                        {
+                            id: '4659d0bd-372b-42ad-8e82-a3e45f5b4d84',
+                            name: 'Karthikeyan A',
+                            father_name: 'EFGHJ',
+                            mobile: '0861033707',
+                            address: 'No:7A Theeran Sivalingam Street, Kabilar Nagar, Manavalanagar'
+                        },
+                        {
+                            id: '5659d0bd-372b-42ad-8e82-a3e45f5b4d85',
+                            name: 'Raja Kumar',
+                            father_name: 'Mohan',
+                            mobile: '9876543210',
+                            address: '123 Main St, Chennai'
+                        },
+                        {
+                            id: '6659d0bd-372b-42ad-8e82-a3e45f5b4d86',
+                            name: 'Priya S',
+                            father_name: 'Suresh',
+                            mobile: '8765432109',
+                            address: '456 Temple Road, Coimbatore'
+                        }
+                    ];
+
+                    // Hide loading indicator
+                    loadingIndicator.classList.add('d-none');
+
+                    if (mockCustomers.length > 0) {
+                        // Populate results
+                        mockCustomers.forEach(customer => {
+                            const customerDiv = document.createElement('div');
+                            customerDiv.className = 'customer-item';
+                            customerDiv.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${customer.name}</strong>
+                                        <div class="text-muted small">${customer.father_name} | ${customer.mobile}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">Select</button>
+                                </div>
+                            `;
+
+                            customerDiv.addEventListener('click', function() {
+                                selectCustomer(customer);
+                            });
+
+                            resultsList.appendChild(customerDiv);
+                        });
+                    } else {
+                        noResults.classList.remove('d-none');
+                    }
+                }, 1000);
+            });
+
+            // Function to select a customer
+            function selectCustomer(customer) {
+                // Hide search results
+                searchResults.classList.add('d-none');
+
+                // Show selected customer details
+                document.getElementById('customerName').textContent = customer.name;
+                document.getElementById('fatherName').textContent = customer.father_name;
+                document.getElementById('customerMobile').textContent = customer.mobile;
+                document.getElementById('customerAddress').textContent = customer.address;
+                document.getElementById('customerId').textContent = customer.id;
+                document.getElementById('customerIdInput').value = customer.id;
+
+                selectedCustomer.classList.remove('d-none');
+
+                // Enable loan details and surety sections
+                loanDetailsSection.style.opacity = '1';
+                loanDetailsSection.style.pointerEvents = 'auto';
+                suretySection.style.opacity = '1';
+                suretySection.style.pointerEvents = 'auto';
+            }
+
+            // Change customer button click handler
+            changeCustomerBtn.addEventListener('click', function() {
+                selectedCustomer.classList.add('d-none');
+                searchInput.value = '';
+
+                // Disable loan details and surety sections
+                loanDetailsSection.style.opacity = '0.5';
+                loanDetailsSection.style.pointerEvents = 'none';
+                suretySection.style.opacity = '0.5';
+                suretySection.style.pointerEvents = 'none';
+            });
+
+            // Fingerprint capture simulation
+            const captureFingerprint = document.getElementById('captureFingerprint');
+            const fingerprintStatus = document.getElementById('fingerprintStatus');
+            const fingerprintData = document.getElementById('fingerprintData');
+
+            captureFingerprint.addEventListener('click', function() {
+                fingerprintStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+
+                // Simulate fingerprint scanning
+                setTimeout(function() {
+                    // Generate mock fingerprint data
+                    const mockFingerprintData = 'Z3JuNWlrMTc1NjU3Mjk5MzI3Mg==';
+
+                    fingerprintStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Fingerprint captured successfully';
+                    fingerprintData.value = mockFingerprintData;
+
+                    // Change button state
+                    captureFingerprint.innerHTML = '<i class="fas fa-redo me-1"></i> Re-capture';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
