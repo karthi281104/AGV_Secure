@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Customer - AGV Finance & Loans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .customer-form {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .fingerprint-section {
+            text-align: center;
+            padding: 2rem;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .fingerprint-icon {
+            font-size: 3rem;
+            color: #3498db;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 0.75rem;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .file-upload-label:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .fingerprint-status {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .fingerprint-captured {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .fingerprint-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .input-help {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="fas fa-university"></i>
+                <span>AGV Finance</span>
+            </div>
+            <div class="sidebar-subtitle">Employee Portal</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/dashboard" class="nav-link">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/customers" class="nav-link active">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="/loans" class="nav-link">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Loans</span>
+            </a>
+            <a href="/reports" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+            <a href="/profile" class="nav-link">
+                <i class="fas fa-user-circle"></i>
+                <span>Profile</span>
+            </a>
+            <a href="/logout" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="content-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">Add New Customer</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span>Welcome, {{ userinfo.name if userinfo else 'Admin' }}</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="container-fluid">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('create_customer') }}" method="POST" enctype="multipart/form-data" class="customer-form">
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user me-2"></i>Personal Information
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="father_name" class="form-label">Father's Name</label>
+                                <input type="text" class="form-control" id="father_name" name="father_name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="mother_name" class="form-label">Mother's Name</label>
+                                <input type="text" class="form-control" id="mother_name" name="mother_name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="mobile" class="form-label">Mobile Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="mobile" name="mobile" pattern="[0-9]{10}" required>
+                                <div class="input-help">Enter 10-digit mobile number</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="additional_mobile" class="form-label">Additional Mobile Number</label>
+                                <input type="tel" class="form-control" id="additional_mobile" name="additional_mobile" pattern="[0-9]{10}">
+                                <div class="input-help">Enter 10-digit mobile number (optional)</div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-id-card me-2"></i>Document Information
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="aadhar_number" class="form-label">Aadhar Card Number</label>
+                                <input type="text" class="form-control" id="aadhar_number" name="aadhar_number" maxlength="14" placeholder="1234 5678 9012">
+                                <div class="input-help">Enter 12-digit Aadhar number (spaces will be added automatically)</div>
+                                <!-- Hidden field to store clean Aadhar number -->
+                                <input type="hidden" id="aadhar_clean" name="aadhar_clean">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="pan_number" class="form-label">PAN Card Number</label>
+                                <input type="text" class="form-control" id="pan_number" name="pan_number" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" placeholder="ABCDE1234F" style="text-transform: uppercase;">
+                                <div class="input-help">Enter 10-character PAN number (ABCDE1234F format)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Upload -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-upload me-2"></i>Document Upload
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="aadhar_photo" class="form-label">Aadhar Card Photo</label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" class="file-upload-input" id="aadhar_photo" name="aadhar_photo" accept="image/*">
+                                    <label for="aadhar_photo" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt me-2"></i>
+                                        Choose Aadhar Card Image
+                                    </label>
+                                </div>
+                                <div id="aadhar_preview"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="pan_photo" class="form-label">PAN Card Photo</label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" class="file-upload-input" id="pan_photo" name="pan_photo" accept="image/*">
+                                    <label for="pan_photo" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt me-2"></i>
+                                        Choose PAN Card Image
+                                    </label>
+                                </div>
+                                <div id="pan_preview"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fingerprint Section -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-fingerprint me-2"></i>Biometric Information
+                        </h3>
+                        <div class="fingerprint-section">
+                            <div class="fingerprint-icon">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <h4>Fingerprint Capture</h4>
+                            <p class="mb-3">Please connect your USB fingerprint scanner and click the button below to capture the customer's fingerprint.</p>
+
+                            <button type="button" class="btn btn-primary btn-lg" id="captureFingerprint">
+                                <i class="fas fa-fingerprint me-2"></i>Capture Fingerprint
+                            </button>
+
+                            <div id="fingerprintStatus" class="fingerprint-status">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span id="statusText">Fingerprint captured successfully!</span>
+                            </div>
+
+                            <input type="hidden" id="fingerprint_data" name="fingerprint_data">
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-save me-2"></i>Add Customer
+                        </button>
+                        <a href="{{ url_for('customers') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        // File upload preview
+        function setupFilePreview(inputId, previewId) {
+            document.getElementById(inputId).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById(previewId);
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-image">`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.innerHTML = '';
+                }
+            });
+        }
+
+        setupFilePreview('aadhar_photo', 'aadhar_preview');
+        setupFilePreview('pan_photo', 'pan_preview');
+
+        // Format Aadhar number with proper validation
+        document.getElementById('aadhar_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, ''); // Remove all spaces
+            let numericValue = value.replace(/\D/g, ''); // Remove all non-numeric characters
+
+            // Limit to 12 digits
+            if (numericValue.length > 12) {
+                numericValue = numericValue.slice(0, 12);
+            }
+
+            // Format with spaces (4-4-4 pattern)
+            let formattedValue = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ');
+
+            // Update the display field
+            e.target.value = formattedValue;
+
+            // Store clean number in hidden field
+            document.getElementById('aadhar_clean').value = numericValue;
+        });
+
+        // Format mobile numbers
+        document.getElementById('mobile').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+
+        document.getElementById('additional_mobile').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+
+        // Fingerprint capture simulation
+        document.getElementById('captureFingerprint').addEventListener('click', function() {
+            const button = this;
+            const statusDiv = document.getElementById('fingerprintStatus');
+            const statusText = document.getElementById('statusText');
+            const fingerprintData = document.getElementById('fingerprint_data');
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Capturing...';
+
+            // Simulate fingerprint capture (replace with actual SDK integration)
+            setTimeout(() => {
+                try {
+                    // This is where you would integrate with your actual fingerprint scanner
+                    // For demonstration, we'll generate a mock fingerprint data
+                    const mockFingerprintData = btoa(Math.random().toString(36).substring(7) + Date.now());
+
+                    fingerprintData.value = mockFingerprintData;
+                    statusDiv.className = 'fingerprint-status fingerprint-captured';
+                    statusDiv.style.display = 'block';
+                    statusText.textContent = 'Fingerprint captured successfully!';
+
+                    button.innerHTML = '<i class="fas fa-check me-2"></i>Fingerprint Captured';
+                    button.className = 'btn btn-success btn-lg';
+
+                } catch (error) {
+                    statusDiv.className = 'fingerprint-status fingerprint-error';
+                    statusDiv.style.display = 'block';
+                    statusText.textContent = 'Error capturing fingerprint. Please try again.';
+
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-fingerprint me-2"></i>Capture Fingerprint';
+                }
+            }, 2000);
+        });
+
+        // Enhanced form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const name = document.getElementById('name').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const aadharClean = document.getElementById('aadhar_clean').value.trim();
+            const panNumber = document.getElementById('pan_number').value.trim();
+
+            // Required field validation
+            if (!name || !mobile) {
+                e.preventDefault();
+                alert('Please fill in all required fields (Name and Mobile Number).');
+                return false;
+            }
+
+            // Mobile number validation
+            if (mobile.length !== 10) {
+                e.preventDefault();
+                alert('Please enter a valid 10-digit mobile number.');
+                return false;
+            }
+
+            // Aadhar validation (if provided)
+            if (aadharClean && aadharClean.length !== 12) {
+                e.preventDefault();
+                alert('Aadhar number must be exactly 12 digits.');
+                return false;
+            }
+
+            // PAN validation (if provided)
+            if (panNumber && panNumber.length !== 10) {
+                e.preventDefault();
+                alert('PAN number must be exactly 10 characters (ABCDE1234F format).');
+                return false;
+            }
+
+            // Additional mobile validation (if provided)
+            const additionalMobile = document.getElementById('additional_mobile').value.trim();
+            if (additionalMobile && additionalMobile.length !== 10) {
+                e.preventDefault();
+                alert('Additional mobile number must be exactly 10 digits.');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

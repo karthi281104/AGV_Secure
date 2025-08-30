@@ -7,19 +7,35 @@ from typing import Optional
 from extensions import db
 
 
-
 class Customer(db.Model):
     __tablename__ = 'customers'
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Personal Information
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    phone: Mapped[str] = mapped_column(String(15), unique=True, nullable=False)
+    mobile: Mapped[str] = mapped_column(String(15), nullable=False)  # Changed from 'phone'
+    additional_mobile: Mapped[Optional[str]] = mapped_column(String(15))  # NEW
+    father_name: Mapped[Optional[str]] = mapped_column(String(100))  # NEW
+    mother_name: Mapped[Optional[str]] = mapped_column(String(100))  # NEW
+
+    # Contact Information
     email: Mapped[Optional[str]] = mapped_column(String(100))
     address: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Document Information
     aadhar_number: Mapped[Optional[str]] = mapped_column(String(12))
     pan_number: Mapped[Optional[str]] = mapped_column(String(10))
-    biometric_data: Mapped[Optional[str]] = mapped_column(Text)
-    #status: Mapped[str] = mapped_column(String(20), default='active')
+
+    # Cloud Storage URLs for documents
+    pan_photo_url: Mapped[Optional[str]] = mapped_column(String(500))  # NEW
+    aadhar_photo_url: Mapped[Optional[str]] = mapped_column(String(500))  # NEW
+    document_metadata: Mapped[Optional[str]] = mapped_column(Text)  # NEW - JSON string
+
+    # Biometric Information
+    fingerprint_data: Mapped[Optional[str]] = mapped_column(Text)  # Renamed from biometric_data
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -30,6 +46,7 @@ class Customer(db.Model):
         return f'<Customer {self.name}>'
 
 
+# Keep your Loan and Payment models as they are
 class Loan(db.Model):
     __tablename__ = 'loans'
 
@@ -44,7 +61,6 @@ class Loan(db.Model):
     loan_type: Mapped[str] = mapped_column(String(50), default='gold')
     collateral_details: Mapped[Optional[dict]] = mapped_column(JSON)
     document_urls: Mapped[Optional[dict]] = mapped_column(JSON)
-    #status: Mapped[str] = mapped_column(String(20), default='active')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -62,35 +78,10 @@ class Payment(db.Model):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     loan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('loans.id'), nullable=False)
     payment_number: Mapped[str] = mapped_column(String(20), nullable=False)
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    principal_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    interest_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    payment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    payment_method: Mapped[str] = mapped_column(String(50), default='cash')
-    receipt_number: Mapped[Optional[str]] = mapped_column(String(50))
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    created_by: Mapped[Optional[str]] = mapped_column(String(100))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Add your other Payment fields here
 
     # Relationships
     loan: Mapped["Loan"] = relationship(back_populates="payments")
 
     def __repr__(self):
         return f'<Payment {self.payment_number}>'
-
-
-class Employee(db.Model):
-    __tablename__ = 'employees'
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    auth0_user_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    role: Mapped[str] = mapped_column(String(50), default='employee')
-    phone: Mapped[Optional[str]] = mapped_column(String(15))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime)
-
-    def __repr__(self):
-        return f'<Employee {self.name}>'
