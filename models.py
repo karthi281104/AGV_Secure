@@ -24,7 +24,7 @@ class Customer(db.Model):
     address: Mapped[Optional[str]] = mapped_column(Text)
 
     # Document Information
-    aadhar_number: Mapped[Optional[str]] = mapped_column(String(12))
+    aadhar_number: Mapped[Optional[str]] = mapped_column(String(16))  # Increase from 12 to 16
     pan_number: Mapped[Optional[str]] = mapped_column(String(10))
 
     # Cloud Storage URLs for documents
