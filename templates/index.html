@@ -3,67 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGV - Private Loan Management System</title>
+    <title>AGV Finance - Professional Loan Management System</title>
+    <meta name="description" content="Secure, professional loan management system for financial institutions. Advanced features for loan processing, customer management, and financial analytics.">
+    <meta name="keywords" content="loan management, financial services, secure banking, loan processing, financial technology">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="AGV Finance - Professional Loan Management System">
+    <meta property="og:description" content="Secure, professional loan management system for financial institutions.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://agvfinance.com">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Design System CSS -->
+    <link href="{{ url_for('static', filename='css/design-system.css') }}" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/index.css') }}" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Header with navigation -->
+    <!-- Professional Header Navigation -->
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar">
             <div class="container">
                 <a class="navbar-brand" href="/">
-                    <span class="fw-bold">AGV</span> <span class="text-muted">Loans</span>
+                    <i class="fas fa-university"></i>
+                    <span>AGV Finance</span>
                 </a>
+                
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+                
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
+                    <ul class="navbar-nav ms-auto align-items-center">
                         <li class="nav-item">
-                            <a class="nav-link active" href="/">Home</a>
+                            <a class="nav-link" href="#features">Features</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#services">Services</a>
+                            <a class="nav-link" href="#about">About</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#calculators">Calculators</a>
+                            <a class="nav-link" href="#security">Security</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link btn-nav" href="/login">Login</a>
+                            <a class="nav-link" href="#contact">Contact</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/login" class="btn btn-primary ms-3">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Secure Login
+                            </a>
                         </li>
                     </ul>
                 </div>
             </div>
         </nav>
-    </header>
-
-    <!-- Main content -->
+    <!-- Professional Main Content -->
     <main>
-        <!-- Hero section with emphasis on security -->
-        <section class="hero-section">
+        <!-- Professional Hero Section -->
+        <section class="hero-section" id="home">
             <div class="particles-container" id="particles-js"></div>
-            <div class="container position-relative">
+            <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-md-6" data-aos="fade-right" data-aos-duration="1000">
-                        <h1 class="animated-heading">Welcome to <span class="highlight-text">AGV</span></h1>
-                        <h2>Private Loan <span class="typing-text">Management</span></h2>
-                        <p>Secure financial services backed by gold and land assets. Exclusive loan management system for tracking, processing, and managing financial agreements.</p>
-                        <div class="mt-4 btn-wrapper">
-                            <a href="/login" class="btn btn-primary me-2 btn-glow">Secure Login</a>
-                            <a href="#calculators" class="btn btn-outline-secondary btn-hover-effect">Loan Calculators</a>
+                    <div class="col-lg-6">
+                        <div class="fade-in-left">
+                            <h1>Secure Financial Solutions for Modern Enterprises</h1>
+                            <h2>Advanced <span class="highlight-text">Loan Management</span> Platform</h2>
+                            <p>Experience next-generation financial technology with enterprise-grade security, comprehensive loan processing, and real-time analytics. Built for financial institutions that demand excellence.</p>
+                            <div class="btn-wrapper">
+                                <a href="/login" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Access Platform
+                                </a>
+                                <a href="#features" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-info-circle"></i>
+                                    Learn More
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6" data-aos="fade-up" data-aos-duration="1200" data-aos-delay="300">
-                        <div class="hero-image-container">
-                            <img src="https://images.unsplash.com/photo-1601597111158-2fceff292cdc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" class="img-fluid hero-image" alt="AGV Loans">
-                            <div class="floating-badge">Confidential</div>
+                    <div class="col-lg-6">
+                        <div class="hero-image-container fade-in-right">
+                            <img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" class="img-fluid hero-image" alt="AGV Finance Professional Platform">
+                            <div class="floating-badge">Enterprise Ready</div>
                             <div class="floating-element element-1"><i class="fas fa-lock"></i></div>
                             <div class="floating-element element-2"><i class="fas fa-shield-alt"></i></div>
                         </div>
@@ -72,36 +98,95 @@
             </div>
             <div class="wave-divider">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-                    <path fill="#ffffff" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,133.3C672,139,768,181,864,181.3C960,181,1056,139,1152,122.7C1248,107,1344,117,1392,122.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    <path fill="#f8fafc" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,133.3C672,139,768,181,864,181.3C960,181,1056,139,1152,122.7C1248,107,1344,117,1392,122.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                 </svg>
             </div>
         </section>
 
-        <!-- Services section with loan types -->
-        <section class="features-section" id="services">
+        <!-- Professional Features Section -->
+        <section class="features-section" id="features">
             <div class="container">
-                <h2 class="section-heading text-center mb-5">Our <span class="highlight-text">Services</span></h2>
+                <div class="section-heading">
+                    <h2>Enterprise-Grade Financial Solutions</h2>
+                    <p>Comprehensive loan management platform designed for modern financial institutions with advanced security and analytics capabilities.</p>
+                </div>
+                
                 <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="feature-card">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card fade-in-up">
                             <div class="icon-box">
-                                <i class="fas fa-file-signature"></i>
+                                <i class="fas fa-shield-alt"></i>
                             </div>
-                            <h3>Land Document Loans</h3>
-                            <p>Secure loans against land documents with competitive interest rates and flexible repayment terms. All documents stored with maximum security.</p>
-                            <div class="card-decoration decoration-1"></div>
-                            <div class="card-decoration decoration-2"></div>
+                            <h3>Advanced Security</h3>
+                            <p>Bank-grade encryption, multi-factor authentication, and comprehensive audit trails ensure maximum data protection and regulatory compliance.</p>
+                            <a href="#security" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="feature-card featured">
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card fade-in-up">
                             <div class="icon-box">
-                                <i class="fas fa-coins"></i>
+                                <i class="fas fa-chart-line"></i>
                             </div>
-                            <h3>Gold Loans</h3>
-                            <p>Immediate loans against gold assets with best-in-market valuation. Secure storage and detailed asset tracking for complete transparency.</p>
-                            <div class="card-decoration decoration-1"></div>
-                            <div class="card-decoration decoration-2"></div>
+                            <h3>Real-Time Analytics</h3>
+                            <p>Comprehensive dashboard with real-time loan performance metrics, risk assessment tools, and predictive analytics for informed decision making.</p>
+                            <a href="#analytics" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card fade-in-up">
+                            <div class="icon-box">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3>Customer Management</h3>
+                            <p>Complete customer lifecycle management with document verification, credit scoring, and integrated communication tools.</p>
+                            <a href="#customers" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card featured fade-in-up">
+                            <div class="icon-box">
+                                <i class="fas fa-handshake"></i>
+                            </div>
+                            <h3>Loan Processing</h3>
+                            <p>Streamlined loan origination, approval workflows, disbursement tracking, and automated collection processes.</p>
+                            <a href="#loans" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card fade-in-up">
+                            <div class="icon-box">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <h3>Reporting & Compliance</h3>
+                            <p>Automated regulatory reporting, customizable business intelligence reports, and compliance monitoring dashboards.</p>
+                            <a href="#reports" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card fade-in-up">
+                            <div class="icon-box">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>Mobile Ready</h3>
+                            <p>Responsive design ensures seamless operation across all devices with native mobile experience and offline capabilities.</p>
+                            <a href="#mobile" class="btn-learn-more">
+                                Learn More <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
