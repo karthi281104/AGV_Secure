@@ -105,6 +105,12 @@ def logout():
 
 
 ## PROTECTED ROUTES
+
+@app.route("/test-dashboard")
+def test_dashboard():
+    """Test dashboard without authentication"""
+    return render_template("dashboard.html", userinfo={'name': 'Test User', 'picture': 'https://via.placeholder.com/40'})
+
 @app.route("/dashboard")
 @requires_auth
 def dashboard():
@@ -267,10 +273,171 @@ def new_loan():
     return render_template("new_loan.html", userinfo=session.get('profile'))
 
 
-@app.route("/loans/search-customer")
-@requires_auth
-def search_customer():
-    """API endpoint to search for customers"""
+@app.route("/test-new-loan")
+def test_new_loan():
+    """Test new loan page without authentication"""
+    return render_template("new_loan.html", userinfo={'name': 'Test User', 'picture': 'https://via.placeholder.com/40'})
+
+@app.route("/test-api/customers")
+def test_api_customers():
+    """Test API endpoint to get all customers without authentication"""
+    from models import Customer
+    
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search_query = request.args.get('q', '')
+    
+    try:
+        # Base query
+        query = Customer.query
+        
+        # Apply search filter if provided
+        if search_query and len(search_query) >= 3:
+            query = query.filter(
+                or_(
+                    Customer.name.ilike(f"%{search_query}%"),
+                    Customer.mobile.ilike(f"%{search_query}%"),
+                    Customer.father_name.ilike(f"%{search_query}%"),
+                    Customer.aadhar_number.ilike(f"%{search_query}%")
+                )
+            )
+        
+        # Order by creation date (newest first)
+        query = query.order_by(Customer.created_at.desc())
+        
+        # Paginate
+        customers_pagination = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        customers = customers_pagination.items
+        
+        results = []
+        for customer in customers:
+            results.append({
+                "id": str(customer.id),
+                "name": customer.name,
+                "father_name": customer.father_name or "Not provided",
+                "mobile": customer.mobile,
+                "aadhar_number": customer.aadhar_number or "Not provided",
+                "address": customer.address or "Not provided",
+                "created_at": customer.created_at.isoformat() if customer.created_at else None
+            })
+
+        return jsonify({
+            "customers": results,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": customers_pagination.total,
+                "pages": customers_pagination.pages,
+                "has_next": customers_pagination.has_next,
+                "has_prev": customers_pagination.has_prev
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    """API endpoint to get all customers with pagination and search"""
+    from models import Customer
+    
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search_query = request.args.get('q', '')
+    
+    try:
+        # Base query
+        query = Customer.query
+        
+        # Apply search filter if provided
+        if search_query and len(search_query) >= 3:
+            query = query.filter(
+                or_(
+                    Customer.name.ilike(f"%{search_query}%"),
+                    Customer.mobile.ilike(f"%{search_query}%"),
+                    Customer.father_name.ilike(f"%{search_query}%"),
+                    Customer.aadhar_number.ilike(f"%{search_query}%")
+                )
+            )
+        
+        # Order by creation date (newest first)
+        query = query.order_by(Customer.created_at.desc())
+        
+        # Paginate
+        customers_pagination = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        customers = customers_pagination.items
+        
+        results = []
+        for customer in customers:
+            results.append({
+                "id": str(customer.id),
+                "name": customer.name,
+                "father_name": customer.father_name or "Not provided",
+                "mobile": customer.mobile,
+                "aadhar_number": customer.aadhar_number or "Not provided",
+                "address": customer.address or "Not provided",
+                "created_at": customer.created_at.isoformat() if customer.created_at else None
+            })
+
+        return jsonify({
+            "customers": results,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": customers_pagination.total,
+                "pages": customers_pagination.pages,
+                "has_next": customers_pagination.has_next,
+                "has_prev": customers_pagination.has_prev
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/test-loans/search-customer")
+def test_search_customer():
+    """Test API endpoint to search for customers without authentication"""
+    from models import Customer
+    query = request.args.get('q', '')
+
+    if len(query) < 3:
+        return jsonify({"error": "Query must be at least 3 characters"}), 400
+
+    try:
+        # Search for customers by name, mobile or father's name
+        customers = Customer.query.filter(
+            or_(
+                Customer.name.ilike(f"%{query}%"),
+                Customer.mobile.ilike(f"%{query}%"),
+                Customer.father_name.ilike(f"%{query}%")
+            )
+        ).limit(10).all()
+
+        results = []
+        for customer in customers:
+            results.append({
+                "id": str(customer.id),
+                "name": customer.name,
+                "father_name": customer.father_name or "Not provided",
+                "mobile": customer.mobile,
+                "address": customer.address or "Not provided"
+            })
+
+        return jsonify({"customers": results})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    """API endpoint to search for customers (legacy endpoint for compatibility)"""
     from models import Customer
     query = request.args.get('q', '')
 
