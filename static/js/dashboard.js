@@ -217,13 +217,46 @@ class Dashboard {
     }
 
     updateCharts(data) {
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not available - displaying fallback content');
+            this.showChartFallback();
+            return;
+        }
+        
         this.createDisbursementChart(data);
         this.createLoanTypesChart(data);
     }
 
+    showChartFallback() {
+        // Show fallback content for charts when Chart.js is not available
+        const disbursementContainer = document.getElementById('disbursementChart');
+        const loanTypesContainer = document.getElementById('loanTypesChart');
+        
+        if (disbursementContainer) {
+            disbursementContainer.parentElement.innerHTML = `
+                <div class="chart-fallback">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Chart visualization unavailable</p>
+                    <small>Chart.js library required for data visualization</small>
+                </div>
+            `;
+        }
+        
+        if (loanTypesContainer) {
+            loanTypesContainer.parentElement.innerHTML = `
+                <div class="chart-fallback">
+                    <i class="fas fa-chart-pie"></i>
+                    <p>Chart visualization unavailable</p>
+                    <small>Chart.js library required for data visualization</small>
+                </div>
+            `;
+        }
+    }
+
     createDisbursementChart(data) {
         const ctx = document.getElementById('disbursementChart');
-        if (!ctx) return;
+        if (!ctx || typeof Chart === 'undefined') return;
 
         // Destroy existing chart if it exists
         if (this.charts.disbursement) {
@@ -316,7 +349,7 @@ class Dashboard {
 
     createLoanTypesChart(data) {
         const ctx = document.getElementById('loanTypesChart');
-        if (!ctx) return;
+        if (!ctx || typeof Chart === 'undefined') return;
 
         // Destroy existing chart if it exists
         if (this.charts.loanTypes) {

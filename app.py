@@ -518,13 +518,25 @@ def api_dashboard_stats():
                 'customer': customer.name,
                 'amount': float(loan.principal_amount),
                 'type': loan.loan_type.title(),
-                'date': loan.disbursed_date.isoformat() if loan.disbursed_date else None
+                'date': loan.disbursed_date.isoformat() if loan.disbursed_date else (datetime.utcnow() - relativedelta(hours=2)).isoformat()
             })
         
-        # For payments, we would need a Payment model, so using sample data
+        # For payments, we would need a Payment model, so using sample data with recent dates
         recent_payments = [
-            {'id': 'P001', 'customer': 'Sample Customer', 'amount': 50000, 'loan_id': 'L001', 'date': '2024-01-15'},
-            {'id': 'P002', 'customer': 'Another Customer', 'amount': 25000, 'loan_id': 'L002', 'date': '2024-01-14'}
+            {
+                'id': 'P001', 
+                'customer': 'Sample Customer', 
+                'amount': 50000, 
+                'loan_id': 'L001', 
+                'date': (datetime.utcnow() - relativedelta(hours=1)).isoformat()
+            },
+            {
+                'id': 'P002', 
+                'customer': 'Another Customer', 
+                'amount': 25000, 
+                'loan_id': 'L002', 
+                'date': (datetime.utcnow() - relativedelta(hours=3)).isoformat()
+            }
         ]
         
         return jsonify({
@@ -569,12 +581,12 @@ def api_dashboard_stats():
                 {'type': 'Vehicle Loans', 'count': 39, 'percentage': 10}
             ],
             'recentLoans': [
-                {'id': 'L001', 'customer': 'John Doe', 'amount': 500000, 'type': 'Gold', 'date': '2024-01-15'},
-                {'id': 'L002', 'customer': 'Jane Smith', 'amount': 250000, 'type': 'Personal', 'date': '2024-01-14'}
+                {'id': 'L001', 'customer': 'John Doe', 'amount': 500000, 'type': 'Gold', 'date': (datetime.utcnow() - relativedelta(hours=2)).isoformat()},
+                {'id': 'L002', 'customer': 'Jane Smith', 'amount': 250000, 'type': 'Personal', 'date': (datetime.utcnow() - relativedelta(hours=5)).isoformat()}
             ],
             'recentPayments': [
-                {'id': 'P001', 'customer': 'Alice Johnson', 'amount': 50000, 'loan_id': 'L001', 'date': '2024-01-15'},
-                {'id': 'P002', 'customer': 'Bob Wilson', 'amount': 25000, 'loan_id': 'L002', 'date': '2024-01-14'}
+                {'id': 'P001', 'customer': 'Alice Johnson', 'amount': 50000, 'loan_id': 'L001', 'date': (datetime.utcnow() - relativedelta(hours=1)).isoformat()},
+                {'id': 'P002', 'customer': 'Bob Wilson', 'amount': 25000, 'loan_id': 'L002', 'date': (datetime.utcnow() - relativedelta(hours=4)).isoformat()}
             ]
         })
 
