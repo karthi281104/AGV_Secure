@@ -22,11 +22,12 @@ if ENV_FILE:
     load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
-app.secret_key = env.get("APP_SECRET_KEY")
+app.secret_key = env.get("APP_SECRET_KEY", "dev-secret-key-for-testing")
 
 # --- DATABASE CONFIGURATION ---
-# Assumes you have a config.py file or set the URI directly
-app.config.from_object('config.Config')
+# Simple SQLite configuration for testing
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- INITIALIZE DATABASE ---
 # Initialize the db object with the app
@@ -254,6 +255,11 @@ def create_customer():
 def reports():
     return render_template("reports.html")
 
+
+@app.route("/test-settings")
+def test_settings():
+    """Test settings page without authentication"""
+    return render_template("settings.html", userinfo={'name': 'Test User', 'given_name': 'Test', 'family_name': 'User', 'email': 'test@example.com', 'picture': 'https://via.placeholder.com/150'})
 
 @app.route("/settings")
 @requires_auth
