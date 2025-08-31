@@ -249,6 +249,13 @@ def reports():
     return render_template("reports.html")
 
 
+@app.route("/settings")
+@requires_auth
+def settings():
+    """Settings page for user preferences and configuration"""
+    return render_template("settings.html", userinfo=session.get('profile'))
+
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
