@@ -990,6 +990,13 @@ def api_search_customers():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/payments")
+@requires_auth
+def payments():
+    """Payment management page"""
+    return render_template("payments.html", userinfo=session.get('profile'))
+
+
 @app.route("/api/reports/generate", methods=["POST"])
 @requires_auth
 def api_generate_report():
