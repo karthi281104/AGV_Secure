@@ -92,20 +92,40 @@ class CustomerSelectionModal {
         // Initialize Bootstrap modal
         if (typeof bootstrap !== 'undefined') {
             this.modal = new bootstrap.Modal(document.getElementById('customerSelectionModal'));
+            
+            // Add additional cleanup for Bootstrap modal
+            this.modalElement = document.getElementById('customerSelectionModal');
+            
+            // Debug logging
+            console.log('CustomerSelectionModal: Bootstrap modal initialized');
         } else {
             // Fallback for when Bootstrap is not available
+            const modalElement = document.getElementById('customerSelectionModal');
+            this.modalElement = modalElement;
+            
             this.modal = {
                 show: () => {
-                    const modal = document.getElementById('customerSelectionModal');
-                    modal.style.display = 'block';
-                    modal.classList.add('show');
+                    console.log('CustomerSelectionModal: Showing modal (fallback)');
+                    modalElement.style.display = 'block';
+                    modalElement.classList.add('show');
                     document.body.classList.add('modal-open');
+                    
+                    // Create backdrop if it doesn't exist
+                    if (!document.querySelector('.modal-backdrop')) {
+                        const backdrop = document.createElement('div');
+                        backdrop.className = 'modal-backdrop fade show';
+                        backdrop.setAttribute('data-modal-backdrop', 'customerSelectionModal');
+                        document.body.appendChild(backdrop);
+                    }
                 },
                 hide: () => {
-                    const modal = document.getElementById('customerSelectionModal');
-                    modal.style.display = 'none';
-                    modal.classList.remove('show');
+                    console.log('CustomerSelectionModal: Hiding modal (fallback)');
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
                     document.body.classList.remove('modal-open');
+                    
+                    // Remove backdrop
+                    this.removeBackdrop();
                 }
             };
         }
@@ -146,13 +166,28 @@ class CustomerSelectionModal {
 
         // Handle modal events
         document.getElementById('customerSelectionModal').addEventListener('shown.bs.modal', () => {
+            console.log('CustomerSelectionModal: Modal shown event');
             this.loadCustomers();
             searchInput.focus();
         });
 
         document.getElementById('customerSelectionModal').addEventListener('hidden.bs.modal', () => {
+            console.log('CustomerSelectionModal: Modal hidden event');
             this.resetModal();
+            this.cleanupModal();
         });
+
+        // Handle fallback modal events for non-Bootstrap environments
+        if (typeof bootstrap === 'undefined') {
+            // Add click listener to backdrop for closing modal
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-backdrop') && 
+                    e.target.getAttribute('data-modal-backdrop') === 'customerSelectionModal') {
+                    console.log('CustomerSelectionModal: Backdrop clicked, closing modal');
+                    this.modal.hide();
+                }
+            });
+        }
     }
 
     async loadCustomers() {
@@ -395,11 +430,16 @@ class CustomerSelectionModal {
     proceedToLoanForm() {
         if (!this.selectedCustomer) return;
 
+        console.log('CustomerSelectionModal: Proceeding to loan form with customer:', this.selectedCustomer);
+
         // Store selected customer in sessionStorage
         sessionStorage.setItem('selectedCustomer', JSON.stringify(this.selectedCustomer));
 
         // Close modal and redirect to loan form
         this.modal.hide();
+        
+        // Ensure cleanup happens
+        this.cleanupModal();
         
         // Small delay to ensure modal is hidden before navigation
         setTimeout(() => {
@@ -412,10 +452,57 @@ class CustomerSelectionModal {
         this.currentPage = 1;
         this.searchQuery = '';
         
-        document.getElementById('customerModalSearch').value = '';
-        document.getElementById('proceedWithCustomer').disabled = true;
-        document.getElementById('customersGrid').innerHTML = '';
-        document.getElementById('modalPagination').innerHTML = '';
+        const searchInput = document.getElementById('customerModalSearch');
+        const proceedButton = document.getElementById('proceedWithCustomer');
+        const customersGrid = document.getElementById('customersGrid');
+        const modalPagination = document.getElementById('modalPagination');
+        
+        if (searchInput) searchInput.value = '';
+        if (proceedButton) proceedButton.disabled = true;
+        if (customersGrid) customersGrid.innerHTML = '';
+        if (modalPagination) modalPagination.innerHTML = '';
+        
+        console.log('CustomerSelectionModal: Modal reset completed');
+    }
+
+    // New method to handle backdrop cleanup
+    removeBackdrop() {
+        console.log('CustomerSelectionModal: Removing backdrop');
+        const backdrops = document.querySelectorAll('.modal-backdrop[data-modal-backdrop="customerSelectionModal"]');
+        backdrops.forEach(backdrop => {
+            backdrop.remove();
+        });
+        
+        // Also remove any orphaned Bootstrap backdrops
+        const allBackdrops = document.querySelectorAll('.modal-backdrop');
+        if (allBackdrops.length > 0 && !document.querySelector('.modal.show')) {
+            console.log('CustomerSelectionModal: Removing orphaned backdrops');
+            allBackdrops.forEach(backdrop => backdrop.remove());
+        }
+    }
+
+    // New method to handle comprehensive modal cleanup
+    cleanupModal() {
+        console.log('CustomerSelectionModal: Performing comprehensive cleanup');
+        
+        // Remove any lingering backdrops
+        this.removeBackdrop();
+        
+        // Ensure body classes are cleaned up
+        document.body.classList.remove('modal-open');
+        
+        // Reset body overflow
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Force cleanup of any remaining modal-related styles
+        setTimeout(() => {
+            const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+            if (remainingBackdrops.length > 0) {
+                console.warn('CustomerSelectionModal: Found remaining backdrops after cleanup, removing...');
+                remainingBackdrops.forEach(backdrop => backdrop.remove());
+            }
+        }, 100);
     }
 
     escapeHtml(text) {
@@ -426,6 +513,7 @@ class CustomerSelectionModal {
 
     // Public method to show modal
     show() {
+        console.log('CustomerSelectionModal: Showing modal');
         this.modal.show();
     }
 }
@@ -501,6 +589,8 @@ class NewLoanForm {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('CustomerSelectionModal: DOM ready, initializing...');
+    
     // Initialize customer selection modal
     window.customerModal = new CustomerSelectionModal();
     
@@ -508,6 +598,57 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.pathname === '/loans/new') {
         window.newLoanForm = new NewLoanForm();
     }
+    
+    // Global cleanup function for emergency modal cleanup
+    window.emergencyModalCleanup = function() {
+        console.log('Emergency modal cleanup triggered');
+        
+        // Remove all modal backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        
+        // Reset body styles
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Hide all modals
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        });
+        
+        console.log('Emergency cleanup completed');
+    };
+    
+    // Auto-cleanup on window unload
+    window.addEventListener('beforeunload', () => {
+        if (window.emergencyModalCleanup) {
+            window.emergencyModalCleanup();
+        }
+    });
+    
+    // Periodic cleanup check (every 5 seconds)
+    setInterval(() => {
+        const hasOpenModal = document.querySelector('.modal.show');
+        const hasBackdrop = document.querySelector('.modal-backdrop');
+        const bodyHasModalOpen = document.body.classList.contains('modal-open');
+        
+        // If we have backdrop but no open modal, clean up
+        if (hasBackdrop && !hasOpenModal) {
+            console.warn('Found orphaned backdrop, cleaning up');
+            window.emergencyModalCleanup();
+        }
+        
+        // If body has modal-open but no modal is actually open, clean up
+        if (bodyHasModalOpen && !hasOpenModal) {
+            console.warn('Body has modal-open class but no modal is open, cleaning up');
+            window.emergencyModalCleanup();
+        }
+    }, 5000);
 });
 
 // Function to open customer selection modal from dashboard
