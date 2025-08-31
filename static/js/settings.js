@@ -4,7 +4,82 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
     setupEventListeners();
     loadUserSettings();
+    initializeTheme();
 });
+
+// Initialize theme system
+function initializeTheme() {
+    // Load saved theme preference or default to light
+    const savedTheme = localStorage.getItem('userTheme') || 'light';
+    applyTheme(savedTheme);
+    
+    // Set the appropriate radio button
+    const themeRadio = document.querySelector(`input[name="theme"][value="${savedTheme}"]`);
+    if (themeRadio) {
+        themeRadio.checked = true;
+    }
+    
+    // Listen for system theme changes when auto is selected
+    if (savedTheme === 'auto') {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        mediaQuery.addListener(handleSystemThemeChange);
+    }
+}
+
+// Handle system theme changes
+function handleSystemThemeChange(e) {
+    const currentTheme = localStorage.getItem('userTheme');
+    if (currentTheme === 'auto') {
+        applyTheme('auto');
+    }
+}
+
+// Enhanced theme application
+function applyTheme(theme) {
+    const body = document.body;
+    const html = document.documentElement;
+    
+    // Remove existing theme classes
+    body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    
+    // Apply new theme
+    switch (theme) {
+        case 'dark':
+            body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+            break;
+        case 'auto':
+            body.classList.add('theme-auto');
+            html.classList.add('theme-auto');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                body.classList.add('theme-dark');
+                html.classList.add('theme-dark');
+            } else {
+                body.classList.add('theme-light');
+                html.classList.add('theme-light');
+            }
+            break;
+        default:
+            body.classList.add('theme-light');
+            html.classList.add('theme-light');
+    }
+    
+    // Save theme preference
+    localStorage.setItem('userTheme', theme);
+    
+    // Dispatch custom event for other parts of the application
+    window.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: { theme: theme } 
+    }));
+    
+    // Add smooth transition effect
+    body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+    setTimeout(() => {
+        body.style.transition = '';
+    }, 300);
+}
 
 // Initialize settings page functionality
 function initializeSettings() {
@@ -45,6 +120,12 @@ function setupEventListeners() {
         preferencesForm.addEventListener('submit', handlePreferencesSubmit);
     }
     
+    // Theme change listeners
+    const themeRadios = document.querySelectorAll('input[name="theme"]');
+    themeRadios.forEach(radio => {
+        radio.addEventListener('change', handleThemeChange);
+    });
+    
     // Password confirmation in change password modal
     const confirmPassword = document.getElementById('confirmPassword');
     if (confirmPassword) {
@@ -61,6 +142,87 @@ function setupEventListeners() {
     const restoreConfirm = document.getElementById('restoreConfirm');
     if (restoreConfirm) {
         restoreConfirm.addEventListener('change', validateRestoreConfirmation);
+    }
+    
+    // Enhanced tab navigation with keyboard support
+    setupEnhancedTabNavigation();
+}
+
+// Handle theme changes
+function handleThemeChange(event) {
+    const selectedTheme = event.target.value;
+    applyTheme(selectedTheme);
+    
+    // Show immediate feedback
+    showAlert(`Theme changed to ${selectedTheme} mode`, 'success');
+    
+    // Add visual feedback to the selected option
+    const label = event.target.nextElementSibling;
+    if (label) {
+        label.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+            label.style.transform = '';
+        }, 200);
+    }
+}
+
+// Enhanced tab navigation with keyboard and accessibility support
+function setupEnhancedTabNavigation() {
+    const tabButtons = document.querySelectorAll('.settings-tabs .nav-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    tabButtons.forEach((button, index) => {
+        // Click handling
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            activateTab(button, index);
+        });
+        
+        // Keyboard navigation
+        button.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                activateTab(button, index);
+            }
+            
+            // Arrow key navigation
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const direction = e.key === 'ArrowRight' ? 1 : -1;
+                const nextIndex = (index + direction + tabButtons.length) % tabButtons.length;
+                tabButtons[nextIndex].focus();
+            }
+        });
+    });
+}
+
+// Activate tab with smooth transition
+function activateTab(activeButton, activeIndex) {
+    const tabButtons = document.querySelectorAll('.settings-tabs .nav-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    // Remove active class from all buttons and panes
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    tabPanes.forEach(pane => {
+        pane.classList.remove('show', 'active');
+    });
+    
+    // Add active class to clicked button
+    activeButton.classList.add('active');
+    
+    // Show the corresponding tab pane with animation
+    const targetPane = tabPanes[activeIndex];
+    if (targetPane) {
+        // Small delay for smooth transition
+        setTimeout(() => {
+            targetPane.classList.add('show', 'active');
+        }, 50);
+    }
+    
+    // Update URL hash for better UX (optional)
+    const tabId = activeButton.getAttribute('data-bs-target');
+    if (tabId) {
+        history.replaceState(null, null, tabId);
     }
 }
 
@@ -167,7 +329,7 @@ function handleProfileSubmit(event) {
     }, 1500);
 }
 
-// Handle preferences form submission
+// Enhanced preferences form submission with theme handling
 function handlePreferencesSubmit(event) {
     event.preventDefault();
     
@@ -184,11 +346,33 @@ function handlePreferencesSubmit(event) {
     const submitButton = event.target.querySelector('button[type="submit"]');
     showLoading(submitButton);
     
+    // Add visual feedback
+    const form = event.target;
+    form.style.opacity = '0.7';
+    form.style.pointerEvents = 'none';
+    
     // Simulate API call
     setTimeout(() => {
         hideLoading(submitButton);
+        form.style.opacity = '';
+        form.style.pointerEvents = '';
         savePreferencesData(preferencesData);
+        
+        // Show success animation
+        showSuccessAnimation(submitButton);
     }, 1500);
+}
+
+// Show success animation
+function showSuccessAnimation(button) {
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+    button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+    }, 2000);
 }
 
 // Validate password strength
@@ -341,7 +525,7 @@ function saveProfileData(data) {
     }
 }
 
-// Save preferences data
+// Enhanced preferences data saving with theme support
 function savePreferencesData(data) {
     try {
         // Store in localStorage (in real app, send to server)
@@ -353,13 +537,19 @@ function savePreferencesData(data) {
         }
         
         showAlert('Preferences saved successfully!', 'success');
+        
+        // Trigger preference change event for other components
+        window.dispatchEvent(new CustomEvent('preferencesChanged', { 
+            detail: { preferences: data } 
+        }));
+        
     } catch (error) {
         console.error('Save error:', error);
         showAlert('Failed to save preferences. Please try again.', 'danger');
     }
 }
 
-// Load user settings from storage
+// Enhanced user settings loading with theme restoration
 function loadUserSettings() {
     try {
         // Load profile data
@@ -374,9 +564,23 @@ function loadUserSettings() {
         if (preferencesData) {
             const data = JSON.parse(preferencesData);
             populatePreferencesForm(data);
+            
+            // Apply saved theme
+            if (data.theme) {
+                applyTheme(data.theme);
+            }
         }
+        
+        // Load theme preference separately for backward compatibility
+        const savedTheme = localStorage.getItem('userTheme');
+        if (savedTheme && !preferencesData) {
+            applyTheme(savedTheme);
+        }
+        
     } catch (error) {
         console.error('Load settings error:', error);
+        // Fallback to default theme
+        applyTheme('light');
     }
 }
 
@@ -390,7 +594,7 @@ function populateProfileForm(data) {
     });
 }
 
-// Populate preferences form with data
+// Enhanced preferences form population with theme support
 function populatePreferencesForm(data) {
     Object.keys(data).forEach(key => {
         const element = document.getElementById(key);
@@ -398,6 +602,8 @@ function populatePreferencesForm(data) {
             if (element.type === 'radio') {
                 if (element.value === data[key]) {
                     element.checked = true;
+                    // Add visual feedback for checked radio
+                    element.dispatchEvent(new Event('change'));
                 }
             } else if (element.type === 'checkbox') {
                 element.checked = data[key] === 'true' || data[key] === true;
@@ -406,26 +612,77 @@ function populatePreferencesForm(data) {
             }
         }
     });
+    
+    // Special handling for theme
+    if (data.theme) {
+        const themeRadio = document.querySelector(`input[name="theme"][value="${data.theme}"]`);
+        if (themeRadio) {
+            themeRadio.checked = true;
+            applyTheme(data.theme);
+        }
+    }
 }
 
-// Apply theme
+// Apply theme with enhanced features
 function applyTheme(theme) {
     const body = document.body;
+    const html = document.documentElement;
     
     // Remove existing theme classes
-    body.classList.remove('theme-light', 'theme-dark');
+    body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
     
+    // Apply new theme
     switch (theme) {
         case 'dark':
             body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+            updateMetaThemeColor('#1a202c');
             break;
         case 'auto':
+            body.classList.add('theme-auto');
+            html.classList.add('theme-auto');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+            if (prefersDark) {
+                body.classList.add('theme-dark');
+                html.classList.add('theme-dark');
+                updateMetaThemeColor('#1a202c');
+            } else {
+                body.classList.add('theme-light');
+                html.classList.add('theme-light');
+                updateMetaThemeColor('#ffffff');
+            }
             break;
         default:
             body.classList.add('theme-light');
+            html.classList.add('theme-light');
+            updateMetaThemeColor('#ffffff');
     }
+    
+    // Save theme preference
+    localStorage.setItem('userTheme', theme);
+    
+    // Dispatch custom event for other parts of the application
+    window.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: { theme: theme } 
+    }));
+    
+    // Add smooth transition effect
+    body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+    setTimeout(() => {
+        body.style.transition = '';
+    }, 300);
+}
+
+// Update meta theme color for mobile browsers
+function updateMetaThemeColor(color) {
+    let metaThemeColor = document.querySelector("meta[name=theme-color]");
+    if (!metaThemeColor) {
+        metaThemeColor = document.createElement("meta");
+        metaThemeColor.name = "theme-color";
+        document.getElementsByTagName('head')[0].appendChild(metaThemeColor);
+    }
+    metaThemeColor.content = color;
 }
 
 // Utility functions
