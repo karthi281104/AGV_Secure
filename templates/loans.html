@@ -3,50 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loans Management - AGV Finance & Loans</title>
+    <title>Loan Management - AGV Finance Professional Platform</title>
+    <meta name="description" content="Professional loan management interface with advanced filtering, analytics, and comprehensive loan tracking.">
+    
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Design System CSS -->
+    <link href="{{ url_for('static', filename='css/design-system.css') }}" rel="stylesheet">
+    <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
     <style>
+        /* Professional Loans Table Styles */
         .loans-table-wrapper {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            background: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-base);
+            padding: var(--space-6);
+            margin-bottom: var(--space-8);
+            border: 1px solid var(--secondary-200);
         }
 
-        .table-responsive {
-            overflow-x: auto;
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 1px solid var(--secondary-200);
+        }
+
+        .table-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--secondary-900);
+        }
+
+        .table-filters {
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+        }
+
+        .filter-select {
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--secondary-300);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            background: white;
+        }
+
+        .professional-table {
+            width: 100%;
+            background: white;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .professional-table th {
+            background: var(--secondary-50);
+            padding: var(--space-4) var(--space-4);
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary-700);
+            font-size: var(--text-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--secondary-200);
+        }
+
+        .professional-table td {
+            padding: var(--space-4) var(--space-4);
+            border-bottom: 1px solid var(--secondary-100);
+            font-size: var(--text-sm);
+            color: var(--secondary-800);
+        }
+
+        .professional-table tbody tr:hover {
+            background: var(--secondary-50);
         }
 
         .action-btns {
             display: flex;
-            gap: 0.5rem;
+            gap: var(--space-2);
+        }
+
+        .btn-action {
+            padding: var(--space-1) var(--space-2);
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: var(--text-xs);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+
+        .btn-view {
+            background: var(--primary-50);
+            color: var(--primary-700);
+        }
+
+        .btn-view:hover {
+            background: var(--primary-100);
+            color: var(--primary-800);
+        }
+
+        .btn-edit {
+            background: var(--warning-50);
+            color: var(--warning-700);
+        }
+
+        .btn-edit:hover {
+            background: var(--warning-100);
+            color: var(--warning-800);
         }
 
         .loan-status {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .status-active {
-            background-color: #e7f5ea;
-            color: #28a745;
+            background: var(--success-100);
+            color: var(--success-800);
         }
 
         .status-overdue {
-            background-color: #f8d7da;
-            color: #dc3545;
+            background: var(--danger-100);
+            color: var(--danger-800);
         }
 
         .status-pending {
-            background-color: #fff3cd;
-            color: #fd7e14;
+            background: var(--warning-100);
+            color: var(--warning-800);
         }
+
+        .status-completed {
+            background: var(--secondary-100);
+            color: var(--secondary-800);
+        }
+
+        .loan-amount {
+            font-weight: 600;
+            color: var(--secondary-900);
+        }
+
+        .customer-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            color: var(--secondary-900);
+        }
+
+        .customer-mobile {
+            font-size: var(--text-xs);
+            color: var(--secondary-600);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-16);
+            color: var(--secondary-600);
+        }
+
+        .empty-state i {
+            font-size: var(--text-6xl);
+            margin-bottom: var(--space-4);
+            color: var(--secondary-400);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: var(--space-16);
+        }
+
+        .loading-spinner-inline {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--secondary-200);
+            border-top: 3px solid var(--primary-600);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
 
         .status-completed {
             background-color: #d1e7ff;
@@ -214,106 +367,100 @@
         </nav>
 
         <!-- Content -->
-        <div class="content-wrapper">
-            <div class="container-fluid">
-                <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+        <!-- Professional Loans Content -->
+        <div class="container-fluid p-4">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="page-title"><i class="fas fa-hand-holding-usd me-2"></i> Loans</h1>
+            <!-- Professional Loans Table -->
+            <div class="loans-table-wrapper">
+                <!-- Table Header with Actions -->
+                <div class="table-header">
+                    <div>
+                        <h2 class="table-title">Loan Portfolio</h2>
+                        <p class="text-muted">Manage and track all loan applications</p>
+                    </div>
                     <a href="/loans/new" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i> New Loan
+                        <i class="fas fa-plus"></i> New Loan Application
                     </a>
                 </div>
 
-                <div class="loans-table-wrapper">
-                    <!-- Search and Filter Row -->
-                    <div class="row search-filter-row mb-3">
-                        <div class="col-md-4">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search by name or loan number...">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="loanTypeFilter">
-                                <option value="">All Loan Types</option>
-                                <option value="gold">Gold Loan</option>
-                                <option value="personal">Personal Loan</option>
-                                <option value="business">Business Loan</option>
-                                <option value="vehicle">Vehicle Loan</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="completed">Completed</option>
-                                <option value="pending">Pending</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-outline-secondary w-100" id="clearFiltersBtn">
-                                <i class="fas fa-times me-1"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Loans Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="loansTable">
-                            <thead>
-                                <tr>
-                                    <th>Loan Number</th>
-                                    <th>Customer Name</th>
-                                    <th>Amount</th>
-                                    <th>Loan Type</th>
-                                    <th>Disbursed Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="loansTableBody">
-                                <!-- Loan rows will be populated by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="emptyState" class="empty-state d-none">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <h3>No loans found</h3>
-                        <p class="text-muted">No loans match your current filters or there are no loans in the system yet.</p>
-                        <a href="/loans/new" class="btn btn-primary mt-2">
-                            <i class="fas fa-plus me-1"></i> Create First Loan
-                        </a>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div id="loadingState" class="empty-state">
-                        <div class="spinner-border text-primary mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p>Loading loans...</p>
-                    </div>
-
-                    <!-- Pagination -->
-                    <nav aria-label="Loans pagination" id="loansPagination" class="d-none">
-                        <ul class="pagination">
-                            <!-- Pagination links will be generated by JavaScript -->
-                        </ul>
-                    </nav>
+                <!-- Professional Search and Filters -->
+                <div class="table-filters mb-4">
+                    <input type="text" id="searchInput" class="form-control me-3" placeholder="Search by customer name or loan number..." style="max-width: 300px;">
+                    <select class="filter-select" id="loanTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="gold">Gold Loan</option>
+                        <option value="personal">Personal Loan</option>
+                        <option value="business">Business Loan</option>
+                        <option value="vehicle">Vehicle Loan</option>
+                    </select>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                    <button class="btn btn-outline-secondary" id="clearFiltersBtn">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
                 </div>
+
+                <!-- Professional Loans Table -->
+                <div class="table-responsive">
+                    <table class="professional-table" id="loansTable">
+                        <thead>
+                            <tr>
+                                <th>Loan Number</th>
+                                <th>Customer Details</th>
+                                <th>Principal Amount</th>
+                                <th>Loan Type</th>
+                                <th>Disbursed Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loansTableBody">
+                            <!-- Loan rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Professional Empty State -->
+                <div id="emptyState" class="empty-state d-none">
+                    <i class="fas fa-handshake"></i>
+                    <h3>No Loans Found</h3>
+                    <p>No loans match your current filters or there are no loans in the system yet.</p>
+                    <a href="/loans/new" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Loan
+                    </a>
+                </div>
+
+                <!-- Professional Loading State -->
+                <div id="loadingState" class="loading-state">
+                    <div class="loading-spinner-inline"></div>
+                    <p>Loading loan portfolio...</p>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Loans pagination" id="loansPagination" class="d-none mt-4">
+                    <ul class="pagination justify-content-center">
+                        <!-- Pagination links will be generated by JavaScript -->
+                    </ul>
+                </nav>
             </div>
         </div>
-    </main>
+    </div>
 
     <!-- Loan Details Modal -->
     <div class="modal fade loan-details-modal" id="loanDetailsModal" tabindex="-1" aria-labelledby="loanDetailsModalLabel" aria-hidden="true">

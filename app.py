@@ -110,8 +110,18 @@ def logout():
 def dashboard():
     return render_template(
         "dashboard.html",
-        userinfo=session.get('profile')
+        userinfo=session.get('profile', {'name': 'Demo User', 'picture': 'https://ui-avatars.com/api/?name=Demo+User&background=3b82f6&color=fff'})
     )
+
+@app.route("/dashboard_demo")
+def dashboard_demo():
+    """Demo dashboard without authentication for testing"""
+    mock_userinfo = {
+        'name': 'Demo User',
+        'picture': 'https://ui-avatars.com/api/?name=Demo+User&background=3b82f6&color=fff',
+        'email': 'demo@agvfinance.com'
+    }
+    return render_template("dashboard.html", userinfo=mock_userinfo)
 
 
 @app.route('/calculators/emi')
@@ -145,6 +155,16 @@ def profile():
 @requires_auth
 def loans():
     return render_template("loans.html", userinfo=session.get('profile'))
+
+@app.route("/loans_demo")
+def loans_demo():
+    """Demo loans page without authentication for testing"""
+    mock_userinfo = {
+        'name': 'Loan Officer',
+        'picture': 'https://ui-avatars.com/api/?name=Loan+Officer&background=3b82f6&color=fff',
+        'email': 'loans@agvfinance.com'
+    }
+    return render_template("loans.html", userinfo=mock_userinfo)
 
 
 @app.route("/customers")
