@@ -156,6 +156,16 @@ def profile():
 def loans():
     return render_template("loans.html", userinfo=session.get('profile'))
 
+@app.route("/loans_demo")
+def loans_demo():
+    """Demo loans page without authentication for testing"""
+    mock_userinfo = {
+        'name': 'Loan Officer',
+        'picture': 'https://ui-avatars.com/api/?name=Loan+Officer&background=3b82f6&color=fff',
+        'email': 'loans@agvfinance.com'
+    }
+    return render_template("loans.html", userinfo=mock_userinfo)
+
 
 @app.route("/customers")
 @requires_auth
