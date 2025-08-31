@@ -701,6 +701,37 @@ body {
     background-color: rgba(0, 0, 0, 0.4);
 }
 
+/* Ensure modal backdrop is properly handled */
+.modal-backdrop {
+    z-index: 1040;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* Fix for persistent backdrop issues */
+body:not(.modal-open) .modal-backdrop {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+/* Ensure main content is accessible when no modal is open */
+body:not(.modal-open) {
+    overflow: auto !important;
+    padding-right: 0 !important;
+}
+
 #customerSelectionModal .modal-dialog {
     max-width: 1200px;
     margin: 3rem auto;
@@ -767,6 +798,23 @@ body {
 
 .modal-open {
     overflow: hidden;
+}
+
+/* Emergency cleanup for stuck modal states */
+body:not(.modal-open) .modal {
+    display: none !important;
+}
+
+body:not(.modal-open) .modal-backdrop {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Ensure clickable elements maintain pointer events */
+.content:not(.modal-open),
+.content:not(.modal-open) * {
+    pointer-events: auto !important;
 }
 
 .customer-card {
