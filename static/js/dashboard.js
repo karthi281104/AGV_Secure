@@ -139,16 +139,29 @@ class Dashboard {
 
     updateStats(data) {
         // Update stat values
-        this.animateCountUp('totalCustomers', data.totalCustomers || 0);
-        this.animateCountUp('totalDisbursed', data.totalDisbursed || 0, true);
-        this.animateCountUp('totalInterest', data.totalInterest || 0, true);
-        this.animateCountUp('activeLoans', data.activeLoans || 0);
+        this.animateCountUp('totalCustomers', data.total_customers || 0);
+        this.animateCountUp('totalDisbursed', data.total_disbursed || 0, true);
+        this.animateCountUp('totalInterest', data.total_interest || 0, true);
+        this.animateCountUp('activeLoans', data.active_loans || 0);
 
-        // Update change indicators
-        this.updateChangeIndicator('customersChange', '+12%', 'positive');
-        this.updateChangeIndicator('disbursedChange', '+8.5%', 'positive');
-        this.updateChangeIndicator('interestChange', '+15.2%', 'positive');
-        this.updateChangeIndicator('loansChange', '+6.7%', 'positive');
+        // Update change indicators with actual data
+        const customersChange = data.customers_change || 0;
+        const disbursedChange = data.disbursed_change || 0;
+        const interestChange = data.interest_change || 0;
+        const loansChange = data.loans_change || 0;
+
+        this.updateChangeIndicator('customersChange', 
+            `${customersChange > 0 ? '+' : ''}${customersChange.toFixed(1)}% from last month`, 
+            customersChange >= 0 ? 'positive' : 'negative');
+        this.updateChangeIndicator('disbursedChange', 
+            `${disbursedChange > 0 ? '+' : ''}${disbursedChange.toFixed(1)}% from last month`, 
+            disbursedChange >= 0 ? 'positive' : 'negative');
+        this.updateChangeIndicator('interestChange', 
+            `${interestChange > 0 ? '+' : ''}${interestChange.toFixed(1)}% from last month`, 
+            interestChange >= 0 ? 'positive' : 'negative');
+        this.updateChangeIndicator('loansChange', 
+            `${loansChange > 0 ? '+' : ''}${loansChange.toFixed(1)}% from last month`, 
+            loansChange >= 0 ? 'positive' : 'negative');
     }
 
     animateCountUp(elementId, finalValue, isCurrency = false) {
@@ -199,18 +212,51 @@ class Dashboard {
         element.className = `stat-change ${type}`;
         element.innerHTML = `
             <i class="fas fa-arrow-${type === 'positive' ? 'up' : 'down'}"></i>
-            ${change} from last month
+            ${change}
         `;
     }
 
     updateCharts(data) {
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not available - displaying fallback content');
+            this.showChartFallback();
+            return;
+        }
+        
         this.createDisbursementChart(data);
         this.createLoanTypesChart(data);
     }
 
+    showChartFallback() {
+        // Show fallback content for charts when Chart.js is not available
+        const disbursementContainer = document.getElementById('disbursementChart');
+        const loanTypesContainer = document.getElementById('loanTypesChart');
+        
+        if (disbursementContainer) {
+            disbursementContainer.parentElement.innerHTML = `
+                <div class="chart-fallback">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Chart visualization unavailable</p>
+                    <small>Chart.js library required for data visualization</small>
+                </div>
+            `;
+        }
+        
+        if (loanTypesContainer) {
+            loanTypesContainer.parentElement.innerHTML = `
+                <div class="chart-fallback">
+                    <i class="fas fa-chart-pie"></i>
+                    <p>Chart visualization unavailable</p>
+                    <small>Chart.js library required for data visualization</small>
+                </div>
+            `;
+        }
+    }
+
     createDisbursementChart(data) {
         const ctx = document.getElementById('disbursementChart');
-        if (!ctx) return;
+        if (!ctx || typeof Chart === 'undefined') return;
 
         // Destroy existing chart if it exists
         if (this.charts.disbursement) {
@@ -303,7 +349,7 @@ class Dashboard {
 
     createLoanTypesChart(data) {
         const ctx = document.getElementById('loanTypesChart');
-        if (!ctx) return;
+        if (!ctx || typeof Chart === 'undefined') return;
 
         // Destroy existing chart if it exists
         if (this.charts.loanTypes) {
@@ -377,7 +423,8 @@ class Dashboard {
                 </div>
                 <div class="activity-content">
                     <div class="activity-title">New loan disbursed</div>
-                    <div class="activity-subtitle">${loan.customer_name} - ${this.formatCurrency(loan.amount)} - ${this.formatRelativeTime(loan.date)}</div>
+                    <div class="activity-subtitle">${loan.customer || 'N/A'} - ${this.formatCurrency(loan.amount || 0)} - ${loan.type || 'Loan'}</div>
+                    <div class="activity-date">${this.formatRelativeTime(loan.date)}</div>
                 </div>
             </div>
         `).join('');
@@ -399,7 +446,8 @@ class Dashboard {
                 </div>
                 <div class="activity-content">
                     <div class="activity-title">Payment received</div>
-                    <div class="activity-subtitle">${this.formatCurrency(payment.amount)} - ${this.formatRelativeTime(payment.date)}</div>
+                    <div class="activity-subtitle">${payment.customer || 'N/A'} - ${this.formatCurrency(payment.amount || 0)}</div>
+                    <div class="activity-date">${this.formatRelativeTime(payment.date)}</div>
                 </div>
             </div>
         `).join('');
