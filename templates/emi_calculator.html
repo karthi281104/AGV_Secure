@@ -251,8 +251,17 @@
                 const interestRate = parseFloat(document.getElementById('interestRate').value);
                 const tenureMonths = parseInt(document.getElementById('loanTenure').value);
 
+                if (!principal || !interestRate || !tenureMonths) {
+                    alert('Please enter valid values for all fields');
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('calculateBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+                document.getElementById('calculateBtn').disabled = true;
+
                 // Call the API
-                fetch('/api/calculate/emi', {
+                fetch('/api/calculators/emi', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -265,22 +274,31 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
                     // Update results
-                    document.getElementById('monthlyEmi').textContent = '₹ ' + formatNumber(data.monthly_emi);
+                    document.getElementById('monthlyEmi').textContent = '₹ ' + formatNumber(data.emi);
                     document.getElementById('totalInterest').textContent = '₹ ' + formatNumber(data.total_interest);
-                    document.getElementById('totalAmount').textContent = '₹ ' + formatNumber(data.total_payment);
+                    document.getElementById('totalAmount').textContent = '₹ ' + formatNumber(data.total_amount);
 
                     // Update chart
-                    emiChart.data.datasets[0].data = [principal, data.total_interest];
+                    emiChart.data.datasets[0].data = [data.principal, data.total_interest];
                     emiChart.update();
 
                     // Generate amortization schedule
-                    generateAmortizationTable(data.schedule);
+                    generateAmortizationTable(data.amortization);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     // Fallback calculation if API fails
                     fallbackCalculation(principal, interestRate, tenureMonths);
+                })
+                .finally(() => {
+                    // Reset button state
+                    document.getElementById('calculateBtn').innerHTML = 'Calculate EMI';
+                    document.getElementById('calculateBtn').disabled = false;
                 });
             }
 
@@ -288,9 +306,14 @@
                 // Calculate monthly interest rate
                 const monthlyInterestRate = interestRate / 100 / 12;
 
-                // Calculate EMI using formula: P × r × (1 + r)^n / ((1 + r)^n - 1)
-                const emi = principal * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenureMonths) /
-                            (Math.pow(1 + monthlyInterestRate, tenureMonths) - 1);
+                let emi;
+                if (monthlyInterestRate === 0) {
+                    emi = principal / tenureMonths;
+                } else {
+                    // Calculate EMI using formula: P × r × (1 + r)^n / ((1 + r)^n - 1)
+                    emi = principal * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenureMonths) /
+                                (Math.pow(1 + monthlyInterestRate, tenureMonths) - 1);
+                }
 
                 // Calculate total amount and interest
                 const totalAmount = emi * tenureMonths;
@@ -319,9 +342,9 @@
                     schedule.push({
                         month: month,
                         emi: emi,
-                        principal_payment: principalPayment,
-                        interest_payment: interestPayment,
-                        remaining_principal: remaining
+                        principal: principalPayment,
+                        interest: interestPayment,
+                        balance: remaining
                     });
                 }
 
@@ -341,9 +364,9 @@
                         const row = tableBody.insertRow();
                         row.insertCell(0).textContent = month;
                         row.insertCell(1).textContent = '₹ ' + formatNumber(schedule[i].emi.toFixed(2));
-                        row.insertCell(2).textContent = '₹ ' + formatNumber(schedule[i].principal_payment.toFixed(2));
-                        row.insertCell(3).textContent = '₹ ' + formatNumber(schedule[i].interest_payment.toFixed(2));
-                        row.insertCell(4).textContent = '₹ ' + formatNumber(schedule[i].remaining_principal.toFixed(2));
+                        row.insertCell(2).textContent = '₹ ' + formatNumber(schedule[i].principal.toFixed(2));
+                        row.insertCell(3).textContent = '₹ ' + formatNumber(schedule[i].interest.toFixed(2));
+                        row.insertCell(4).textContent = '₹ ' + formatNumber(schedule[i].balance.toFixed(2));
                     }
                 }
             }
@@ -351,6 +374,15 @@
             function formatNumber(num) {
                 return new Intl.NumberFormat('en-IN').format(num);
             }
+
+            // Auto-calculate on input change (with debounce)
+            let calculationTimeout;
+            ['loanAmount', 'interestRate', 'loanTenure'].forEach(fieldId => {
+                document.getElementById(fieldId).addEventListener('input', function() {
+                    clearTimeout(calculationTimeout);
+                    calculationTimeout = setTimeout(calculateEMI, 500);
+                });
+            });
 
             // Calculate EMI on page load with default values
             calculateEMI();

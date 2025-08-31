@@ -799,5 +799,222 @@ def api_user_profile():
         }), 200
 
 
+@app.route("/api/calculators/emi", methods=["POST"])
+def api_calculate_emi():
+    """API endpoint to calculate EMI"""
+    try:
+        data = request.get_json()
+        
+        principal = float(data.get('principal', 0))
+        interest_rate = float(data.get('interest_rate', 0))
+        tenure_months = int(data.get('tenure_months', 0))
+        
+        if principal <= 0 or interest_rate <= 0 or tenure_months <= 0:
+            return jsonify({"error": "Invalid input values"}), 400
+        
+        # Calculate EMI using the formula: EMI = [P x R x (1+R)^N] / [(1+R)^N-1]
+        monthly_rate = interest_rate / (12 * 100)
+        
+        if monthly_rate == 0:
+            emi = principal / tenure_months
+        else:
+            emi = (principal * monthly_rate * (1 + monthly_rate)**tenure_months) / ((1 + monthly_rate)**tenure_months - 1)
+        
+        total_amount = emi * tenure_months
+        total_interest = total_amount - principal
+        
+        # Generate amortization schedule
+        amortization = []
+        balance = principal
+        
+        for month in range(1, tenure_months + 1):
+            interest_payment = balance * monthly_rate
+            principal_payment = emi - interest_payment
+            balance -= principal_payment
+            
+            amortization.append({
+                'month': month,
+                'emi': round(emi, 2),
+                'principal': round(principal_payment, 2),
+                'interest': round(interest_payment, 2),
+                'balance': round(max(0, balance), 2)
+            })
+        
+        return jsonify({
+            'emi': round(emi, 2),
+            'total_amount': round(total_amount, 2),
+            'total_interest': round(total_interest, 2),
+            'principal': principal,
+            'amortization': amortization
+        })
+        
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": "Invalid input data"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/calculators/gold", methods=["POST"])
+def api_calculate_gold_loan():
+    """API endpoint to calculate gold loan amount"""
+    try:
+        data = request.get_json()
+        
+        gold_weight = float(data.get('gold_weight', 0))
+        gold_purity = float(data.get('gold_purity', 0))
+        gold_rate = float(data.get('gold_rate', 5500))  # Default gold rate per gram
+        ltv_ratio = float(data.get('ltv_ratio', 75))  # Loan to Value ratio (75% default)
+        
+        if gold_weight <= 0 or gold_purity <= 0:
+            return jsonify({"error": "Invalid gold weight or purity"}), 400
+        
+        # Calculate gold value
+        gold_value = gold_weight * (gold_purity / 100) * gold_rate
+        
+        # Calculate loan amount based on LTV ratio
+        max_loan_amount = gold_value * (ltv_ratio / 100)
+        
+        # Calculate different tenure options with interest
+        tenure_options = [
+            {'months': 6, 'rate': 10.5},
+            {'months': 12, 'rate': 11.0},
+            {'months': 18, 'rate': 11.5},
+            {'months': 24, 'rate': 12.0},
+            {'months': 36, 'rate': 12.5}
+        ]
+        
+        loan_options = []
+        for option in tenure_options:
+            monthly_rate = option['rate'] / (12 * 100)
+            if monthly_rate == 0:
+                emi = max_loan_amount / option['months']
+            else:
+                emi = (max_loan_amount * monthly_rate * (1 + monthly_rate)**option['months']) / ((1 + monthly_rate)**option['months'] - 1)
+            
+            total_amount = emi * option['months']
+            total_interest = total_amount - max_loan_amount
+            
+            loan_options.append({
+                'tenure_months': option['months'],
+                'interest_rate': option['rate'],
+                'emi': round(emi, 2),
+                'total_amount': round(total_amount, 2),
+                'total_interest': round(total_interest, 2)
+            })
+        
+        return jsonify({
+            'gold_value': round(gold_value, 2),
+            'max_loan_amount': round(max_loan_amount, 2),
+            'ltv_ratio': ltv_ratio,
+            'loan_options': loan_options,
+            'gold_details': {
+                'weight': gold_weight,
+                'purity': gold_purity,
+                'rate_per_gram': gold_rate
+            }
+        })
+        
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": "Invalid input data"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/customers/search")
+@requires_auth
+def api_search_customers():
+    """API endpoint to search customers with pagination"""
+    from models import Customer
+    
+    # Get query parameters
+    search_term = request.args.get('q', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    try:
+        # Base query
+        query = Customer.query
+        
+        # Apply search filter if provided
+        if search_term and len(search_term) >= 2:
+            search_filter = f"%{search_term}%"
+            query = query.filter(
+                or_(
+                    Customer.name.ilike(search_filter),
+                    Customer.mobile.ilike(search_filter),
+                    Customer.father_name.ilike(search_filter),
+                    Customer.aadhar_number.ilike(search_filter),
+                    Customer.pan_number.ilike(search_filter)
+                )
+            )
+        
+        # Order by creation date (newest first)
+        query = query.order_by(Customer.created_at.desc())
+        
+        # Paginate
+        customers_pagination = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        customers = customers_pagination.items
+        
+        results = []
+        for customer in customers:
+            results.append({
+                "id": str(customer.id),
+                "name": customer.name,
+                "father_name": customer.father_name or "Not provided",
+                "mobile": customer.mobile,
+                "additional_mobile": customer.additional_mobile,
+                "aadhar_number": customer.aadhar_number or "Not provided",
+                "pan_number": customer.pan_number or "Not provided",
+                "address": customer.address or "Not provided",
+                "created_at": customer.created_at.isoformat() if customer.created_at else None
+            })
+
+        return jsonify({
+            "customers": results,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": customers_pagination.total,
+                "pages": customers_pagination.pages,
+                "has_next": customers_pagination.has_next,
+                "has_prev": customers_pagination.has_prev
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/generate", methods=["POST"])
+@requires_auth
+def api_generate_report():
+    """API endpoint to generate reports"""
+    try:
+        data = request.get_json()
+        report_type = data.get('report_type')
+        format_type = data.get('format', 'pdf')
+        date_range = data.get('date_range', 'month')
+        
+        # Simulate report generation
+        report_data = {
+            'report_id': f"RPT_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            'type': report_type,
+            'format': format_type,
+            'status': 'generated',
+            'download_url': f"/api/reports/download/{report_type}_{datetime.utcnow().strftime('%Y%m%d')}.{format_type}",
+            'generated_at': datetime.utcnow().isoformat()
+        }
+        
+        return jsonify(report_data)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(host="localhost", port=5000, debug=True)
