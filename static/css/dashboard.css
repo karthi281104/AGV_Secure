@@ -694,24 +694,19 @@ body {
 
 /* Customer Selection Modal Styles */
 #customerSelectionModal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1050;
-    display: none;
+    z-index: 1055;
 }
 
-#customerSelectionModal.show {
-    display: block !important;
+#customerSelectionModal .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 #customerSelectionModal .modal-dialog {
     max-width: 1200px;
     margin: 3rem auto;
     position: relative;
+    z-index: 1;
+    pointer-events: auto;
 }
 
 #customerSelectionModal .modal-content {
@@ -719,6 +714,8 @@ body {
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 #customerSelectionModal .modal-header {
@@ -756,6 +753,16 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+#customerSelectionModal .modal-footer .btn,
+#customerSelectionModal .modal-header .btn,
+#customerSelectionModal .modal-body .btn {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .modal-open {
@@ -765,6 +772,12 @@ body {
 .customer-card {
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.customer-card * {
+    pointer-events: auto;
 }
 
 .customer-card:hover .card {
