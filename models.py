@@ -77,8 +77,29 @@ class Payment(db.Model):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     loan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('loans.id'), nullable=False)
-    payment_number: Mapped[str] = mapped_column(String(20), nullable=False)
-    # Add your other Payment fields here
+    payment_number: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    
+    # Payment Details
+    payment_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    payment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    payment_method: Mapped[str] = mapped_column(String(50), default='cash')  # cash, cheque, online, card
+    payment_status: Mapped[str] = mapped_column(String(20), default='completed')  # pending, completed, failed
+    
+    # EMI Details
+    emi_month: Mapped[Optional[int]] = mapped_column(Integer)  # Which EMI month this payment is for
+    principal_amount: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+    interest_amount: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+    
+    # Payment Reference
+    reference_number: Mapped[Optional[str]] = mapped_column(String(50))  # Bank reference, cheque number, etc.
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    
+    # Receipt Information
+    receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     loan: Mapped["Loan"] = relationship(back_populates="payments")

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management - AGV Finance & Loans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .customers-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .search-box {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .customers-table {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+            border: none;
+            padding: 1rem;
+        }
+        
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .customer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            margin: 0 0.125rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+        
+        .pagination {
+            margin-top: 2rem;
+        }
+        
+        .pagination .page-link {
+            color: #667eea;
+            border-color: #e9ecef;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        
+        .stats-cards {
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            border-left: 4px solid;
+        }
+        
+        .stat-card.customers {
+            border-left-color: #3498db;
+        }
+        
+        .stat-card.active {
+            border-left-color: #2ecc71;
+        }
+        
+        .stat-card.loans {
+            border-left-color: #f39c12;
+        }
+        
+        .stat-card.revenue {
+            border-left-color: #e74c3c;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="fas fa-university"></i>
+                <span>AGV Finance</span>
+            </div>
+            <div class="sidebar-subtitle">Employee Portal</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/dashboard" class="nav-link">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/customers" class="nav-link active">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="/loans" class="nav-link">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Loan Management</span>
+            </a>
+            <a href="/payments" class="nav-link">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Payments</span>
+            </a>
+            <a href="/reports" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+            <a href="/calculators/gold" class="nav-link">
+                <i class="fas fa-calculator"></i>
+                <span>Calculators</span>
+            </a>
+            <a href="/settings" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <img src="https://via.placeholder.com/40" alt="User" class="user-avatar">
+                <div class="user-details">
+                    <div class="user-name">Employee</div>
+                    <div class="user-role">Loan Officer</div>
+                </div>
+            </div>
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">Customer Management</h1>
+            </div>
+
+            <div class="header-right">
+                <div class="user-menu">
+                    <img src="https://via.placeholder.com/40" alt="User" class="user-avatar">
+                    <span class="user-name">Employee</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="container-fluid">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Page Header -->
+                <div class="customers-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="mb-1">Customer Management</h2>
+                            <p class="mb-0">Manage all customer information and relationships</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/customers/add" class="btn btn-light">
+                                <i class="fas fa-plus me-2"></i>
+                                Add New Customer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row stats-cards">
+                    <div class="col-md-3">
+                        <div class="stat-card customers">
+                            <div class="stat-number" id="totalCustomers">{{ customers|length or 0 }}</div>
+                            <div class="stat-label">Total Customers</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card active">
+                            <div class="stat-number" id="activeCustomers">{{ customers|length or 0 }}</div>
+                            <div class="stat-label">Active Customers</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card loans">
+                            <div class="stat-number" id="totalLoans">0</div>
+                            <div class="stat-label">Customer Loans</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card revenue">
+                            <div class="stat-number" id="totalRevenue">₹0</div>
+                            <div class="stat-label">Total Revenue</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="search-box">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="customerSearch" placeholder="Search customers by name, mobile, or Aadhar...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary me-2" onclick="searchCustomers()">
+                                <i class="fas fa-search me-1"></i>
+                                Search
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                                <i class="fas fa-times me-1"></i>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers Table -->
+                <div class="customers-table">
+                    <div class="table-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">Customer List</h5>
+                            </div>
+                            <div class="col-auto">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportCustomers('excel')">
+                                        <i class="fas fa-file-excel me-1"></i>
+                                        Excel
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportCustomers('pdf')">
+                                        <i class="fas fa-file-pdf me-1"></i>
+                                        PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="customersTable">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Contact</th>
+                                    <th>Father's Name</th>
+                                    <th>Aadhar Number</th>
+                                    <th>Status</th>
+                                    <th>Joined Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody">
+                                {% if customers %}
+                                    {% for customer in customers %}
+                                    <tr data-customer-id="{{ customer.id }}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="customer-avatar">
+                                                    {{ customer.name[0].upper() if customer.name else 'C' }}
+                                                </div>
+                                                <div class="ms-3">
+                                                    <div class="fw-bold">{{ customer.name or 'N/A' }}</div>
+                                                    <div class="text-muted small">ID: {{ customer.id.hex[:8] }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>{{ customer.mobile or 'N/A' }}</div>
+                                            {% if customer.additional_mobile %}
+                                                <div class="text-muted small">{{ customer.additional_mobile }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ customer.father_name or 'N/A' }}</td>
+                                        <td>
+                                            {% if customer.aadhar_number %}
+                                                <code>{{ customer.aadhar_number }}</code>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="status-badge status-active">Active</span>
+                                        </td>
+                                        <td>
+                                            {% if customer.created_at %}
+                                                {{ customer.created_at.strftime('%d %b %Y') }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-primary btn-action" onclick="viewCustomer('{{ customer.id }}')" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-success btn-action" onclick="editCustomer('{{ customer.id }}')" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-warning btn-action" onclick="createLoan('{{ customer.id }}')" title="Create Loan">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <button class="btn btn-info btn-action" onclick="viewLoans('{{ customer.id }}')" title="View Loans">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="fas fa-users fa-3x mb-3"></i>
+                                                <h5>No Customers Found</h5>
+                                                <p>Start by adding your first customer to the system.</p>
+                                                <a href="/customers/add" class="btn btn-primary">
+                                                    <i class="fas fa-plus me-2"></i>
+                                                    Add Customer
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="Customer pagination" class="p-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                            <li class="page-item active">
+                                <span class="page-link">1</span>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#" onclick="loadPage(2)">2</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#" onclick="loadPage(3)">3</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#" onclick="loadPage(2)">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Customer Details Modal -->
+    <div class="modal fade" id="customerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Customer Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="customerModalBody">
+                    <!-- Customer details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editCurrentCustomer()">Edit Customer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        let currentCustomerId = null;
+        
+        // Search functionality
+        function searchCustomers() {
+            const searchTerm = document.getElementById('customerSearch').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            if (searchTerm.length < 3 && !statusFilter) {
+                alert('Please enter at least 3 characters to search or select a status filter.');
+                return;
+            }
+            
+            // Here you would make an AJAX request to search customers
+            console.log('Searching for:', searchTerm, 'Status:', statusFilter);
+            // Implementation would call backend API
+        }
+        
+        function clearSearch() {
+            document.getElementById('customerSearch').value = '';
+            document.getElementById('statusFilter').value = '';
+            // Reload the page to show all customers
+            window.location.reload();
+        }
+        
+        function viewCustomer(customerId) {
+            currentCustomerId = customerId;
+            // Fetch customer details and show in modal
+            const modal = new bootstrap.Modal(document.getElementById('customerModal'));
+            document.getElementById('customerModalBody').innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            modal.show();
+            
+            // Simulate loading customer details
+            setTimeout(() => {
+                document.getElementById('customerModalBody').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Personal Information</h6>
+                            <p><strong>Name:</strong> Customer Name</p>
+                            <p><strong>Mobile:</strong> +91 98765 43210</p>
+                            <p><strong>Father's Name:</strong> Father Name</p>
+                            <p><strong>Address:</strong> Customer Address</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Documents</h6>
+                            <p><strong>Aadhar:</strong> XXXX XXXX 1234</p>
+                            <p><strong>PAN:</strong> ABCDE1234F</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                        </div>
+                    </div>
+                `;
+            }, 1000);
+        }
+        
+        function editCustomer(customerId) {
+            // Redirect to edit customer page
+            window.location.href = `/customers/edit/${customerId}`;
+        }
+        
+        function createLoan(customerId) {
+            // Redirect to create loan page with customer pre-selected
+            window.location.href = `/loans/new?customer_id=${customerId}`;
+        }
+        
+        function viewLoans(customerId) {
+            // Redirect to loans page filtered by customer
+            window.location.href = `/loans?customer_id=${customerId}`;
+        }
+        
+        function editCurrentCustomer() {
+            if (currentCustomerId) {
+                editCustomer(currentCustomerId);
+            }
+        }
+        
+        function exportCustomers(format) {
+            // Implement export functionality
+            alert(`Exporting customers to ${format.toUpperCase()} format...`);
+        }
+        
+        function loadPage(pageNum) {
+            // Implement pagination
+            console.log('Loading page:', pageNum);
+        }
+        
+        // Auto-search on typing (with debounce)
+        let searchTimeout;
+        document.getElementById('customerSearch').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3) {
+                    searchCustomers();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

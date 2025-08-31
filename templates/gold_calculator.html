@@ -194,6 +194,191 @@
                 document.getElementById('loanToValueRange').value = this.value;
             });
 
+            // Calculate gold loan on button click
+            document.getElementById('calculateBtn').addEventListener('click', function() {
+                calculateGoldLoan();
+            });
+
+            function calculateGoldLoan() {
+                const goldWeight = parseFloat(document.getElementById('goldWeight').value);
+                const goldPurity = parseFloat(document.getElementById('goldPurity').value);
+                const goldRate = parseFloat(document.getElementById('goldRate').value);
+                const ltvRatio = parseFloat(document.getElementById('loanToValue').value);
+
+                if (!goldWeight || !goldPurity || !goldRate || !ltvRatio) {
+                    alert('Please enter valid values for all fields');
+                    return;
+                }
+
+                if (goldWeight <= 0 || goldPurity <= 0 || goldPurity > 100 || goldRate <= 0 || ltvRatio <= 0 || ltvRatio > 100) {
+                    alert('Please enter valid positive values. Purity and LTV should be between 1-100%');
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('calculateBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+                document.getElementById('calculateBtn').disabled = true;
+
+                // Call the API
+                fetch('/api/calculators/gold', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        gold_weight: goldWeight,
+                        gold_purity: goldPurity,
+                        gold_rate: goldRate,
+                        ltv_ratio: ltvRatio
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Update results
+                    document.getElementById('goldValue').textContent = '₹ ' + formatNumber(data.gold_value);
+                    document.getElementById('maxLoanAmount').textContent = '₹ ' + formatNumber(data.max_loan_amount);
+
+                    // Generate loan options table
+                    generateLoanOptionsTable(data.loan_options);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Fallback calculation if API fails
+                    fallbackCalculation(goldWeight, goldPurity, goldRate, ltvRatio);
+                })
+                .finally(() => {
+                    // Reset button state
+                    document.getElementById('calculateBtn').innerHTML = 'Calculate Loan Amount';
+                    document.getElementById('calculateBtn').disabled = false;
+                });
+            }
+
+            function fallbackCalculation(goldWeight, goldPurity, goldRate, ltvRatio) {
+                // Calculate gold value
+                const goldValue = goldWeight * (goldPurity / 100) * goldRate;
+                
+                // Calculate maximum loan amount
+                const maxLoanAmount = goldValue * (ltvRatio / 100);
+
+                // Update results
+                document.getElementById('goldValue').textContent = '₹ ' + formatNumber(goldValue.toFixed(2));
+                document.getElementById('maxLoanAmount').textContent = '₹ ' + formatNumber(maxLoanAmount.toFixed(2));
+
+                // Generate sample loan options
+                const loanOptions = [
+                    {tenure_months: 6, interest_rate: 10.5},
+                    {tenure_months: 12, interest_rate: 11.0},
+                    {tenure_months: 18, interest_rate: 11.5},
+                    {tenure_months: 24, interest_rate: 12.0},
+                    {tenure_months: 36, interest_rate: 12.5}
+                ];
+
+                const calculatedOptions = loanOptions.map(option => {
+                    const monthlyRate = option.interest_rate / (12 * 100);
+                    let emi;
+                    
+                    if (monthlyRate === 0) {
+                        emi = maxLoanAmount / option.tenure_months;
+                    } else {
+                        emi = (maxLoanAmount * monthlyRate * Math.pow(1 + monthlyRate, option.tenure_months)) / 
+                              (Math.pow(1 + monthlyRate, option.tenure_months) - 1);
+                    }
+                    
+                    const totalAmount = emi * option.tenure_months;
+                    const totalInterest = totalAmount - maxLoanAmount;
+
+                    return {
+                        tenure_months: option.tenure_months,
+                        interest_rate: option.interest_rate,
+                        emi: emi,
+                        total_amount: totalAmount,
+                        total_interest: totalInterest
+                    };
+                });
+
+                generateLoanOptionsTable(calculatedOptions);
+            }
+
+            function generateLoanOptionsTable(loanOptions) {
+                // Create or find the loan options section
+                let loanOptionsSection = document.getElementById('loanOptionsSection');
+                if (!loanOptionsSection) {
+                    // Create the section if it doesn't exist
+                    loanOptionsSection = document.createElement('div');
+                    loanOptionsSection.id = 'loanOptionsSection';
+                    loanOptionsSection.className = 'mt-4';
+                    
+                    const cardBody = document.querySelector('.results-card .card-body');
+                    cardBody.appendChild(loanOptionsSection);
+                }
+
+                loanOptionsSection.innerHTML = `
+                    <h5 class="mb-3">Loan Tenure Options</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tenure</th>
+                                    <th>Interest Rate</th>
+                                    <th>Monthly EMI</th>
+                                    <th>Total Interest</th>
+                                    <th>Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loanOptionsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                const tableBody = document.getElementById('loanOptionsTableBody');
+                
+                loanOptions.forEach(option => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = `
+                        <td><strong>${option.tenure_months} months</strong></td>
+                        <td>${option.interest_rate.toFixed(1)}%</td>
+                        <td>₹ ${formatNumber(option.emi.toFixed(2))}</td>
+                        <td>₹ ${formatNumber(option.total_interest.toFixed(2))}</td>
+                        <td>₹ ${formatNumber(option.total_amount.toFixed(2))}</td>
+                    `;
+                });
+            }
+
+            function formatNumber(num) {
+                return new Intl.NumberFormat('en-IN').format(num);
+            }
+
+            // Auto-calculate on input change (with debounce)
+            let calculationTimeout;
+            ['goldWeight', 'goldPurity', 'goldRate', 'loanToValue'].forEach(fieldId => {
+                document.getElementById(fieldId).addEventListener('input', function() {
+                    clearTimeout(calculationTimeout);
+                    calculationTimeout = setTimeout(calculateGoldLoan, 800);
+                });
+            });
+
+            // Calculate on page load with default values
+            calculateGoldLoan();
+        });
+    </script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+
+            // Sync range slider with input field
+            document.getElementById('loanToValueRange').addEventListener('input', function() {
+                document.getElementById('loanToValue').value = this.value;
+            });
+
+            document.getElementById('loanToValue').addEventListener('input', function() {
+                document.getElementById('loanToValueRange').value = this.value;
+            });
+
             // Calculate gold loan function
             document.getElementById('calculateBtn').addEventListener('click', function() {
                 calculateGoldLoan();
