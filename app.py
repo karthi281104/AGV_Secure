@@ -3,13 +3,18 @@ from os import environ as env
 from urllib.parse import quote_plus, urlencode
 from authlib.integrations.flask_client import OAuth
 from dotenv import find_dotenv, load_dotenv
-from flask import Flask, redirect, render_template, session, url_for, request, flash
+from flask import Flask, redirect, render_template, session, url_for, request, flash, jsonify
 from functools import wraps
 from extensions import db
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import base64
+import uuid
+import random
+import string
+from sqlalchemy import or_
+from dateutil.relativedelta import relativedelta
 
 # Load environment variables
 ENV_FILE = find_dotenv()
@@ -139,7 +144,7 @@ def profile():
 @app.route("/loans")
 @requires_auth
 def loans():
-    return render_template("loans.html")
+    return render_template("loans.html", userinfo=session.get('profile'))
 
 
 @app.route("/customers")
@@ -255,8 +260,6 @@ def internal_error(error):
     return render_template("500.html"), 500
 
 
-# Add these routes to your app.py file
-
 @app.route("/loans/new")
 @requires_auth
 def new_loan():
@@ -268,6 +271,7 @@ def new_loan():
 @requires_auth
 def search_customer():
     """API endpoint to search for customers"""
+    from models import Customer
     query = request.args.get('q', '')
 
     if len(query) < 3:
@@ -303,6 +307,8 @@ def search_customer():
 @requires_auth
 def create_loan():
     """Create a new loan"""
+    from models import Customer, Loan
+
     try:
         # Get customer ID
         customer_id = request.form.get('customer_id')
@@ -386,6 +392,82 @@ def create_loan():
         db.session.rollback()
         flash(f"Error creating loan: {str(e)}", "danger")
         return redirect(url_for('new_loan'))
+
+
+@app.route("/api/loans")
+@requires_auth
+def api_loans():
+    """API endpoint to get all loans"""
+    try:
+        # Query loans from the database with customer information
+        from models import Loan, Customer  # Import here to avoid circular dependency
+
+        loans_data = db.session.query(Loan, Customer) \
+            .join(Customer, Loan.customer_id == Customer.id) \
+            .all()
+
+        results = []
+        for loan, customer in loans_data:
+            # Calculate loan status (in a real app, you would have a proper status field)
+            loan_status = "active"
+            maturity_date = loan.maturity_date
+            current_date = datetime.utcnow()
+
+            if maturity_date and maturity_date < current_date:
+                # Loan has passed maturity date
+                loan_status = "completed"
+            elif loan.disbursed_date > current_date - relativedelta(months=1):
+                # Loan was recently created
+                loan_status = "pending"
+
+            # Get surety details from collateral_details if available
+            surety_name = None
+            surety_mobile = None
+            surety_aadhar = None
+            surety_photo_url = None
+
+            if loan.collateral_details and 'surety' in loan.collateral_details:
+                surety = loan.collateral_details['surety']
+                surety_name = surety.get('name')
+                surety_mobile = surety.get('mobile')
+                surety_aadhar = surety.get('aadhar')
+                surety_photo_url = surety.get('photo_url')
+
+            # Get bond paper URL from document_urls if available
+            bond_paper_url = None
+            if loan.document_urls and 'bond_paper' in loan.document_urls:
+                bond_paper_url = loan.document_urls['bond_paper']
+
+            # Create loan object
+            loan_obj = {
+                "id": str(loan.id),
+                "loan_number": loan.loan_number,
+                "customer_id": str(customer.id),
+                "customer_name": customer.name,
+                "customer_mobile": customer.mobile,
+                "customer_father_name": customer.father_name,
+                "customer_address": customer.address,
+                "principal_amount": float(loan.principal_amount),
+                "interest_rate": float(loan.interest_rate),
+                "tenure_months": loan.tenure_months,
+                "disbursed_date": loan.disbursed_date.isoformat() if loan.disbursed_date else None,
+                "maturity_date": loan.maturity_date.isoformat() if loan.maturity_date else None,
+                "loan_type": loan.loan_type,
+                "status": loan_status,
+                "surety_name": surety_name,
+                "surety_mobile": surety_mobile,
+                "surety_aadhar": surety_aadhar,
+                "surety_photo_url": surety_photo_url,
+                "bond_paper_url": bond_paper_url
+            }
+
+            results.append(loan_obj)
+
+        return jsonify({"loans": results})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host="localhost", port=5000, debug=True)

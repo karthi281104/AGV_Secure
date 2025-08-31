@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loans Management - AGV Finance & Loans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .loans-table-wrapper {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .loan-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: #e7f5ea;
+            color: #28a745;
+        }
+
+        .status-overdue {
+            background-color: #f8d7da;
+            color: #dc3545;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #fd7e14;
+        }
+
+        .status-completed {
+            background-color: #d1e7ff;
+            color: #0d6efd;
+        }
+
+        .search-filter-row {
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .search-filter-row > div {
+                margin-bottom: 0.5rem;
+            }
+
+            .loan-detail-label {
+                min-width: 120px;
+                font-weight: 600;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .pagination {
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        /* Loan Details Modal Styles */
+        .loan-details-modal .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .loan-details-modal .loan-id {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .loan-details-modal .customer-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .loan-details-modal .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .loan-details-modal .detail-section-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .loan-details-modal .detail-row {
+            display: flex;
+            margin-bottom: 0.5rem;
+        }
+
+        .loan-details-modal .detail-label {
+            width: 40%;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .loan-details-modal .detail-value {
+            width: 60%;
+        }
+
+        .loan-details-modal .surety-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        #loanDetailsModal .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+
+        #loanDetailsModal .tab-content {
+            padding: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="fas fa-university"></i>
+                <span>AGV Finance</span>
+            </div>
+            <div class="sidebar-subtitle">Employee Portal</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/dashboard" class="nav-link">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/customers" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="/loans" class="nav-link active">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Loans</span>
+            </a>
+            <a href="/reports" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+            <a href="/settings" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" id="content">
+        <!-- Topbar -->
+        <nav class="navbar navbar-expand-lg bg-white">
+            <div class="container-fluid">
+                <button id="sidebarToggle" class="navbar-toggler" type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="topbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="{{ userinfo.picture }}" alt="Profile" class="rounded-circle me-2" width="30">
+                                {{ userinfo.name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="content-wrapper">
+            <div class="container-fluid">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="page-title"><i class="fas fa-hand-holding-usd me-2"></i> Loans</h1>
+                    <a href="/loans/new" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> New Loan
+                    </a>
+                </div>
+
+                <div class="loans-table-wrapper">
+                    <!-- Search and Filter Row -->
+                    <div class="row search-filter-row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by name or loan number...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="loanTypeFilter">
+                                <option value="">All Loan Types</option>
+                                <option value="gold">Gold Loan</option>
+                                <option value="personal">Personal Loan</option>
+                                <option value="business">Business Loan</option>
+                                <option value="vehicle">Vehicle Loan</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="completed">Completed</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-secondary w-100" id="clearFiltersBtn">
+                                <i class="fas fa-times me-1"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loans Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="loansTable">
+                            <thead>
+                                <tr>
+                                    <th>Loan Number</th>
+                                    <th>Customer Name</th>
+                                    <th>Amount</th>
+                                    <th>Loan Type</th>
+                                    <th>Disbursed Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loansTableBody">
+                                <!-- Loan rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state d-none">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <h3>No loans found</h3>
+                        <p class="text-muted">No loans match your current filters or there are no loans in the system yet.</p>
+                        <a href="/loans/new" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus me-1"></i> Create First Loan
+                        </a>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loadingState" class="empty-state">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading loans...</p>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="Loans pagination" id="loansPagination" class="d-none">
+                        <ul class="pagination">
+                            <!-- Pagination links will be generated by JavaScript -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loan Details Modal -->
+    <div class="modal fade loan-details-modal" id="loanDetailsModal" tabindex="-1" aria-labelledby="loanDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="loanDetailsModalLabel">Loan Details</h5>
+                        <span class="loan-id" id="loanIdDisplay"></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-pills mb-3" id="loanDetailTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="details-tab" data-bs-toggle="pill" data-bs-target="#details" type="button" role="tab">Loan Details</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="payment-history-tab" data-bs-toggle="pill" data-bs-target="#payment-history" type="button" role="tab">Payment History</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="documents-tab" data-bs-toggle="pill" data-bs-target="#documents" type="button" role="tab">Documents</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="loanDetailTabsContent">
+                        <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                            <!-- Customer Information -->
+                            <div class="customer-info mb-3">
+                                <h6><i class="fas fa-user me-2"></i>Customer Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Name:</div>
+                                            <div class="detail-value" id="customerNameDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Mobile:</div>
+                                            <div class="detail-value" id="customerMobileDisplay"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Father's Name:</div>
+                                            <div class="detail-value" id="fatherNameDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Address:</div>
+                                            <div class="detail-value" id="addressDisplay"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loan Information -->
+                            <div class="detail-section">
+                                <div class="detail-section-title">Loan Information</div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Loan Number:</div>
+                                            <div class="detail-value" id="loanNumberDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Principal Amount:</div>
+                                            <div class="detail-value" id="principalAmountDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Interest Rate:</div>
+                                            <div class="detail-value" id="interestRateDisplay"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Disbursed Date:</div>
+                                            <div class="detail-value" id="disbursedDateDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Tenure:</div>
+                                            <div class="detail-value" id="tenureDisplay"></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Maturity Date:</div>
+                                            <div class="detail-value" id="maturityDateDisplay"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Surety Information -->
+                            <div class="detail-section">
+                                <div class="detail-section-title">Surety Information</div>
+                                <div class="surety-info">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Name:</div>
+                                                <div class="detail-value" id="suretyNameDisplay"></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Mobile:</div>
+                                                <div class="detail-value" id="suretyMobileDisplay"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Aadhar Number:</div>
+                                                <div class="detail-value" id="suretyAadharDisplay"></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Photo:</div>
+                                                <div class="detail-value">
+                                                    <a href="#" id="suretyPhotoLink" target="_blank">View Photo</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="payment-history" role="tabpanel" aria-labelledby="payment-history-tab">
+                            <div id="paymentHistoryContent">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Payment Date</th>
+                                                <th>Amount</th>
+                                                <th>Type</th>
+                                                <th>Receipt Number</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="paymentHistoryTableBody">
+                                            <!-- Payment history will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="noPaymentsMessage" class="text-center py-3 d-none">
+                                    <i class="fas fa-receipt text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p>No payment records found for this loan.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Bond Paper</h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <i class="far fa-file-pdf fa-3x text-danger mb-3"></i>
+                                            <p class="mb-2" id="bondPaperFilename">bond-document.pdf</p>
+                                            <a href="#" id="viewBondPaperBtn" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-eye me-1"></i> View Document
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Surety Photo</h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <img id="suretyPhotoImg" src="" class="img-fluid mb-3 rounded" style="max-height: 120px;" alt="Surety Photo">
+                                            <a href="#" id="viewSuretyPhotoBtn" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-eye me-1"></i> View Full Size
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="makePaymentBtn">
+                        <i class="fas fa-money-bill-wave me-1"></i> Make Payment
+                    </button>
+                    <button type="button" class="btn btn-primary" id="editLoanBtn">
+                        <i class="fas fa-edit me-1"></i> Edit Loan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('content').classList.toggle('expanded');
+            });
+
+            // Initialize variables for loans data
+            let allLoans = [];
+            let filteredLoans = [];
+            let currentPage = 1;
+            const loansPerPage = 10;
+
+            // Elements
+            const loansTableBody = document.getElementById('loansTableBody');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            const loansPagination = document.getElementById('loansPagination');
+
+            // Search and filter elements
+            const searchInput = document.getElementById('searchInput');
+            const loanTypeFilter = document.getElementById('loanTypeFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+            // Fetch loans from the API
+            fetchLoans();
+
+            function fetchLoans() {
+                // Show loading state
+                loadingState.classList.remove('d-none');
+                emptyState.classList.add('d-none');
+                loansTableBody.innerHTML = '';
+                loansPagination.classList.add('d-none');
+
+                // Fetch loans data from the API
+                fetch('/api/loans')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading state
+                        loadingState.classList.add('d-none');
+
+                        if (data.loans && data.loans.length > 0) {
+                            allLoans = data.loans;
+                            filteredLoans = [...allLoans];
+                            renderLoans();
+                        } else {
+                            // Show empty state if no loans
+                            emptyState.classList.remove('d-none');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching loans:', error);
+                        loadingState.classList.add('d-none');
+                        emptyState.classList.remove('d-none');
+                        document.querySelector('#emptyState p').textContent = 'Error loading loans. Please try again later.';
+                    });
+            }
+
+            // For development/demo purposes - generate sample loans
+            function generateSampleLoans() {
+                const loanTypes = ['gold', 'personal', 'business', 'vehicle'];
+                const statuses = ['active', 'overdue', 'completed', 'pending'];
+                const customerNames = ['Karthikeyan A', 'Raja Kumar', 'Priya S', 'Mohan K', 'Arun Singh'];
+
+                const loans = [];
+
+                for (let i = 1; i <= 25; i++) {
+                    const loanType = loanTypes[Math.floor(Math.random() * loanTypes.length)];
+                    const status = statuses[Math.floor(Math.random() * statuses.length)];
+                    const customerName = customerNames[Math.floor(Math.random() * customerNames.length)];
+
+                    // Create date within the last year
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - Math.floor(Math.random() * 12));
+
+                    loans.push({
+                        id: `loan-${i}`,
+                        loan_number: `${loanType[0].toUpperCase()}L-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`,
+                        customer_name: customerName,
+                        customer_id: `customer-${i}`,
+                        principal_amount: Math.floor(10000 + Math.random() * 90000),
+                        interest_rate: (5 + Math.random() * 15).toFixed(2),
+                        tenure_months: Math.floor(3 + Math.random() * 57),
+                        loan_type: loanType,
+                        disbursed_date: date.toISOString().split('T')[0],
+                        status: status
+                    });
+                }
+
+                return loans;
+            }
+
+            // Render the loans in the table
+            function renderLoans() {
+                // If no loans available after filtering, show empty state
+                if (filteredLoans.length === 0) {
+                    emptyState.classList.remove('d-none');
+                    loansPagination.classList.add('d-none');
+                    return;
+                }
+
+                // Hide empty state
+                emptyState.classList.add('d-none');
+
+                // Calculate pagination
+                const totalPages = Math.ceil(filteredLoans.length / loansPerPage);
+                const startIndex = (currentPage - 1) * loansPerPage;
+                const endIndex = startIndex + loansPerPage;
+                const currentLoans = filteredLoans.slice(startIndex, endIndex);
+
+                // Clear the table
+                loansTableBody.innerHTML = '';
+
+                // Add loan rows
+                currentLoans.forEach(loan => {
+                    const row = document.createElement('tr');
+
+                    // Format the status based on its value
+                    let statusClass = '';
+                    switch(loan.status) {
+                        case 'active':
+                            statusClass = 'status-active';
+                            break;
+                        case 'overdue':
+                            statusClass = 'status-overdue';
+                            break;
+                        case 'completed':
+                            statusClass = 'status-completed';
+                            break;
+                        case 'pending':
+                            statusClass = 'status-pending';
+                            break;
+                    }
+
+                    // Format the loan type to be more readable
+                    const loanTypeDisplay = loan.loan_type.charAt(0).toUpperCase() + loan.loan_type.slice(1);
+
+                    row.innerHTML = `
+                        <td>${loan.loan_number}</td>
+                        <td>${loan.customer_name}</td>
+                        <td>₹${loan.principal_amount.toLocaleString()}</td>
+                        <td>${loanTypeDisplay}</td>
+                        <td>${formatDate(loan.disbursed_date)}</td>
+                        <td><span class="loan-status ${statusClass}">${loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn btn-sm btn-outline-primary view-loan-btn" data-id="${loan.id}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success payment-btn" data-id="${loan.id}">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+
+                    loansTableBody.appendChild(row);
+                });
+
+                // Add event listeners to view buttons
+                document.querySelectorAll('.view-loan-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const loanId = this.getAttribute('data-id');
+                        openLoanDetails(loanId);
+                    });
+                });
+
+                // Add event listeners to payment buttons
+                document.querySelectorAll('.payment-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const loanId = this.getAttribute('data-id');
+                        // For now, just open the loan details modal
+                        openLoanDetails(loanId);
+                        // In a real implementation, you might want to navigate to a payment page
+                        // or open a payment modal
+                    });
+                });
+
+                // Show pagination if needed
+                if (totalPages > 1) {
+                    renderPagination(totalPages);
+                    loansPagination.classList.remove('d-none');
+                } else {
+                    loansPagination.classList.add('d-none');
+                }
+            }
+
+            // Render pagination links
+            function renderPagination(totalPages) {
+                const paginationElement = document.querySelector('#loansPagination ul');
+                paginationElement.innerHTML = '';
+
+                // Previous button
+                const prevLi = document.createElement('li');
+                prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+                prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>`;
+                paginationElement.appendChild(prevLi);
+
+                if (currentPage > 1) {
+                    prevLi.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        currentPage--;
+                        renderLoans();
+                    });
+                }
+
+                // Page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageLi = document.createElement('li');
+                    pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    paginationElement.appendChild(pageLi);
+
+                    pageLi.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        currentPage = i;
+                        renderLoans();
+                    });
+                }
+
+                // Next button
+                const nextLi = document.createElement('li');
+                nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+                nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>`;
+                paginationElement.appendChild(nextLi);
+
+                if (currentPage < totalPages) {
+                    nextLi.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        currentPage++;
+                        renderLoans();
+                    });
+                }
+            }
+
+            // Format date for display
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            // Search and filter functionality
+            searchInput.addEventListener('input', applyFilters);
+            loanTypeFilter.addEventListener('change', applyFilters);
+            statusFilter.addEventListener('change', applyFilters);
+
+            clearFiltersBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                loanTypeFilter.value = '';
+                statusFilter.value = '';
+                applyFilters();
+            });
+
+            function applyFilters() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const loanType = loanTypeFilter.value;
+                const status = statusFilter.value;
+
+                // Reset to first page when filters change
+                currentPage = 1;
+
+                filteredLoans = allLoans.filter(loan => {
+                    // Search term filter
+                    const matchesSearch = searchTerm === '' ||
+                        loan.loan_number.toLowerCase().includes(searchTerm) ||
+                        loan.customer_name.toLowerCase().includes(searchTerm);
+
+                    // Loan type filter
+                    const matchesType = loanType === '' || loan.loan_type === loanType;
+
+                    // Status filter
+                    const matchesStatus = status === '' || loan.status === status;
+
+                    return matchesSearch && matchesType && matchesStatus;
+                });
+
+                renderLoans();
+            }
+
+            // Open loan details modal
+            function openLoanDetails(loanId) {
+                const loan = allLoans.find(l => l.id === loanId);
+                if (!loan) return;
+
+                // Populate modal with loan details
+                document.getElementById('loanDetailsModalLabel').textContent = `Loan Details - ${loan.loan_number}`;
+                document.getElementById('loanIdDisplay').textContent = `ID: ${loan.id}`;
+
+                // Customer info
+                document.getElementById('customerNameDisplay').textContent = loan.customer_name;
+                document.getElementById('customerMobileDisplay').textContent = loan.customer_mobile || 'N/A';
+                document.getElementById('fatherNameDisplay').textContent = loan.customer_father_name || 'N/A';
+                document.getElementById('addressDisplay').textContent = loan.customer_address || 'N/A';
+
+                // Loan info
+                document.getElementById('loanNumberDisplay').textContent = loan.loan_number;
+                document.getElementById('principalAmountDisplay').textContent = `₹${loan.principal_amount.toLocaleString()}`;
+                document.getElementById('interestRateDisplay').textContent = `${loan.interest_rate}%`;
+                document.getElementById('disbursedDateDisplay').textContent = formatDate(loan.disbursed_date);
+                document.getElementById('tenureDisplay').textContent = `${loan.tenure_months} months`;
+
+                // Calculate maturity date
+                const disbursedDate = new Date(loan.disbursed_date);
+                const maturityDate = new Date(disbursedDate);
+                maturityDate.setMonth(maturityDate.getMonth() + parseInt(loan.tenure_months));
+                document.getElementById('maturityDateDisplay').textContent = formatDate(maturityDate);
+
+                // Surety info (this would come from the loan details in a real application)
+                document.getElementById('suretyNameDisplay').textContent = loan.surety_name || 'Not available';
+                document.getElementById('suretyMobileDisplay').textContent = loan.surety_mobile || 'Not available';
+                document.getElementById('suretyAadharDisplay').textContent = loan.surety_aadhar || 'Not available';
+
+                // Set up surety photo link
+                const suretyPhotoLink = document.getElementById('suretyPhotoLink');
+                if (loan.surety_photo_url) {
+                    suretyPhotoLink.href = loan.surety_photo_url;
+                    suretyPhotoLink.textContent = 'View Photo';
+                    suretyPhotoLink.style.display = 'inline';
+
+                    // Also set the image source for the documents tab
+                    document.getElementById('suretyPhotoImg').src = loan.surety_photo_url;
+                    document.getElementById('viewSuretyPhotoBtn').href = loan.surety_photo_url;
+                } else {
+                    suretyPhotoLink.textContent = 'No photo available';
+                    suretyPhotoLink.removeAttribute('href');
+
+                    // Hide photo in documents tab
+                    document.getElementById('suretyPhotoImg').src = '';
+                    document.getElementById('viewSuretyPhotoBtn').style.display = 'none';
+                }
+
+                // Bond paper document
+                const bondPaperFilename = document.getElementById('bondPaperFilename');
+                const viewBondPaperBtn = document.getElementById('viewBondPaperBtn');
+
+                if (loan.bond_paper_url) {
+                    bondPaperFilename.textContent = loan.bond_paper_url.split('/').pop() || 'bond-document.pdf';
+                    viewBondPaperBtn.href = loan.bond_paper_url;
+                    viewBondPaperBtn.style.display = 'inline-block';
+                } else {
+                    bondPaperFilename.textContent = 'No document available';
+                    viewBondPaperBtn.style.display = 'none';
+                }
+
+                // Payment history (for demo, we'll just show a message)
+                const paymentHistoryTableBody = document.getElementById('paymentHistoryTableBody');
+                const noPaymentsMessage = document.getElementById('noPaymentsMessage');
+
+                // For demo purposes, randomly decide whether to show payments or not
+                if (Math.random() > 0.5) {
+                    paymentHistoryTableBody.innerHTML = '';
+
+                    // Generate some sample payments
+                    const paymentTypes = ['EMI', 'Interest', 'Principal', 'Penalty'];
+                    const paymentStatuses = ['Completed', 'Pending', 'Failed'];
+
+                    // Create 0-5 random payments
+                    const numPayments = Math.floor(Math.random() * 6);
+
+                    if (numPayments > 0) {
+                        for (let i = 0; i < numPayments; i++) {
+                            const paymentDate = new Date(loan.disbursed_date);
+                            paymentDate.setMonth(paymentDate.getMonth() + i);
+
+                            const paymentType = paymentTypes[Math.floor(Math.random() * paymentTypes.length)];
+                            const paymentStatus = paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)];
+                            const amount = Math.floor(1000 + Math.random() * 5000);
+
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${formatDate(paymentDate)}</td>
+                                <td>₹${amount.toLocaleString()}</td>
+                                <td>${paymentType}</td>
+                                <td>RCPT-${Math.floor(10000 + Math.random() * 90000)}</td>
+                                <td>${paymentStatus}</td>
+                            `;
+
+                            paymentHistoryTableBody.appendChild(row);
+                        }
+
+                        noPaymentsMessage.classList.add('d-none');
+                    } else {
+                        noPaymentsMessage.classList.remove('d-none');
+                    }
+                } else {
+                    paymentHistoryTableBody.innerHTML = '';
+                    noPaymentsMessage.classList.remove('d-none');
+                }
+
+                // Event listeners for modal buttons
+                document.getElementById('makePaymentBtn').addEventListener('click', function() {
+                    // This would redirect to a payment page or open another modal
+                    alert('Payment functionality will be implemented in future.');
+                });
+
+                document.getElementById('editLoanBtn').addEventListener('click', function() {
+                    // This would redirect to an edit page
+                    alert('Edit loan functionality will be implemented in future.');
+                });
+
+                // Show the modal
+                const loanDetailsModal = new bootstrap.Modal(document.getElementById('loanDetailsModal'));
+                loanDetailsModal.show();
+            }
+
+            // Since we don't have an actual API endpoint yet, use sample data
+            allLoans = generateSampleLoans();
+            filteredLoans = [...allLoans];
+
+            // Hide loading state and render the loans
+            loadingState.classList.add('d-none');
+            renderLoans();
+        });
+    </script>
+</body>
+</html>
