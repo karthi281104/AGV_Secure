@@ -1,0 +1,509 @@
+/* Settings Page Styles */
+.settings-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.settings-nav {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 0;
+}
+
+.settings-tabs {
+    border: none;
+    margin: 0;
+    background: transparent;
+}
+
+.settings-tabs .nav-item {
+    flex: 1;
+}
+
+.settings-tabs .nav-link {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 1.2rem 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.settings-tabs .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.settings-tabs .nav-link.active {
+    background: white;
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.settings-tabs .nav-link i {
+    font-size: 1.2rem;
+}
+
+.settings-tabs .nav-link span {
+    font-size: 0.9rem;
+}
+
+.settings-content {
+    padding: 2rem;
+}
+
+.settings-section {
+    max-width: 100%;
+}
+
+.section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section-header h4 {
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.section-header p {
+    margin-bottom: 0;
+}
+
+/* Profile Picture Section */
+.profile-picture-section {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.profile-picture-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.profile-picture-overlay {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-picture-container:hover .profile-picture-overlay {
+    opacity: 1;
+}
+
+.profile-picture-container:hover .profile-picture {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+/* Form Groups */
+.preference-group,
+.security-group,
+.notification-group,
+.system-group,
+.data-group {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.preference-group h6,
+.security-group h6,
+.notification-group h6,
+.system-group h6,
+.data-group h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+/* Theme Selector */
+.theme-selector {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.theme-selector .form-check {
+    margin-bottom: 0.75rem;
+}
+
+.theme-selector .form-check:last-child {
+    margin-bottom: 0;
+}
+
+.theme-selector .form-check-label {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+}
+
+.theme-selector .form-check-label:hover {
+    background: #f8f9fa;
+}
+
+.theme-selector .form-check-input:checked + .form-check-label {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary-color);
+}
+
+/* Security Options */
+.security-option,
+.notification-option,
+.export-option,
+.import-option,
+.backup-option {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.security-option:hover,
+.notification-option:hover,
+.export-option:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-color: var(--primary-color);
+}
+
+.security-option:last-child,
+.notification-option:last-child,
+.export-option:last-child,
+.import-option:last-child,
+.backup-option:last-child {
+    margin-bottom: 0;
+}
+
+/* Login History Table */
+.login-history {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.login-history .table {
+    margin-bottom: 0;
+}
+
+.login-history .table th {
+    border-top: none;
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Maintenance Cards */
+.maintenance-actions {
+    margin-top: 1rem;
+}
+
+.maintenance-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.maintenance-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.maintenance-card h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.maintenance-card p {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+/* Import/Export Sections */
+.export-options,
+.import-section,
+.backup-section {
+    margin-top: 1rem;
+}
+
+.import-option,
+.backup-option {
+    margin-bottom: 1rem;
+}
+
+.import-option:last-child,
+.backup-option:last-child {
+    margin-bottom: 0;
+}
+
+/* Form Enhancements */
+.settings-form .form-control,
+.settings-form .form-select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+}
+
+.settings-form .form-control:focus,
+.settings-form .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.settings-form .form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* Switches */
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+/* Buttons */
+.settings-section .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.settings-section .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+}
+
+.settings-section .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.settings-section .btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.settings-section .btn-outline-primary:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Alerts */
+.settings-section .alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.settings-section .alert-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .settings-tabs .nav-link {
+        padding: 1rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .settings-tabs .nav-link i {
+        font-size: 1rem;
+    }
+    
+    .settings-tabs .nav-link span {
+        font-size: 0.8rem;
+    }
+    
+    .settings-content {
+        padding: 1.5rem;
+    }
+    
+    .profile-picture {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .preference-group,
+    .security-group,
+    .notification-group,
+    .system-group,
+    .data-group {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .settings-tabs .nav-link {
+        flex-direction: row;
+        gap: 0.25rem;
+        padding: 0.75rem 0.25rem;
+    }
+    
+    .settings-tabs .nav-link span {
+        display: none;
+    }
+    
+    .profile-picture {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .d-flex.gap-2 .btn {
+        width: 100%;
+    }
+}
+
+/* Animation for tab transitions */
+.tab-pane {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.tab-pane.show.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Custom scrollbar for settings content */
+.settings-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Badge enhancements */
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Table enhancements for login history */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    border-bottom: 2px solid #e9ecef;
+    font-size: 0.9rem;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+/* Modal enhancements */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    border-radius: 0 0 15px 15px;
+}
+
+/* Input group enhancements */
+.input-group .form-control {
+    border-radius: 8px 0 0 8px;
+}
+
+.input-group .btn {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Loading states */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
