@@ -18,7 +18,7 @@ class CustomerSelectionModal {
         this.bindEvents();
     }
 
-    createModal() {
+    createModal() {0
         // Create modal HTML
         const modalHTML = `
         <div class="modal fade" id="customerSelectionModal" tabindex="-1" aria-labelledby="customerSelectionModalLabel" aria-hidden="true">
