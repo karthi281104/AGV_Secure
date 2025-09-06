@@ -36,6 +36,9 @@ class Customer(db.Model):
     # Biometric Information
     fingerprint_data: Mapped[Optional[str]] = mapped_column(Text)  # Renamed from biometric_data
 
+    # Status field - FIXED
+    status: Mapped[str] = mapped_column(String(20), default='active')  # active, inactive, suspended
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -54,8 +57,8 @@ class Loan(db.Model):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('customers.id'), nullable=False)
     loan_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
-    principal_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    interest_rate: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    principal_amount: Mapped[decimal.Decimal] = mapped_column(Numeric(12, 2), nullable=False)  # FIXED: Changed from float
+    interest_rate: Mapped[decimal.Decimal] = mapped_column(Numeric(5, 2), nullable=False)  # FIXED: Changed from float
     tenure_months: Mapped[int] = mapped_column(Integer, nullable=False)
     disbursed_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     maturity_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
@@ -73,6 +76,15 @@ class Loan(db.Model):
     def __repr__(self):
         return f'<Loan {self.loan_number}>'
 
+    def calculate_total_interest(self):
+        """Calculate total interest for the loan"""
+        return (self.principal_amount * self.interest_rate * self.tenure_months) / (100 * 12)
+
+    def calculate_monthly_emi(self):
+        """Calculate monthly EMI"""
+        total_amount = self.principal_amount + self.calculate_total_interest()
+        return total_amount / self.tenure_months
+
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -85,6 +97,11 @@ class Payment(db.Model):
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False)  # cash, bank_transfer, cheque, etc.
     transaction_id: Mapped[Optional[str]] = mapped_column(String(100))
     notes: Mapped[Optional[str]] = mapped_column(Text)
+    
+    # FIXED: Added fields for better payment tracking
+    payment_type: Mapped[str] = mapped_column(String(20), default='principal')  # principal, interest, penalty
+    interest_amount: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric(15, 2), default=0)  # FIXED: Added this field
+    
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=datetime.utcnow)
 

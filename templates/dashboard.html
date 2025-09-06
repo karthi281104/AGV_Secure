@@ -8,6 +8,146 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/universal-responsive.css') }}">
+    <style>
+        /* Customer Selection Modal Styles */
+        .modal {
+            z-index: 1055 !important;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        
+        .customer-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+        
+        .customer-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+        }
+        
+        .customer-card.selected {
+            border-color: #28a745;
+            background-color: #f8fff9;
+        }
+        
+        .customer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .customer-info h6 {
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .customer-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .customer-detail i {
+            width: 16px;
+            margin-right: 0.5rem;
+            color: #007bff;
+        }
+        
+        .select-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .customer-card:hover .select-btn {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .customer-card {
+                padding: 0.75rem;
+            }
+            
+            .customer-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+    <style>
+        .customer-selection-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .customer-selection-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .customer-selection-item:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .customer-selection-item.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .customer-info h6 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .customer-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .customer-detail {
+            font-size: 0.875rem;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .customer-detail i {
+            width: 16px;
+            color: #667eea;
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -92,10 +232,10 @@
                     <i class="fas fa-user-plus"></i>
                     <span>Add Customer</span>
                 </a>
-                <a href="/loans/new" class="quick-action-card">
+                <div class="quick-action-card" onclick="openCustomerSelectionModal()">
                     <i class="fas fa-coins"></i>
                     <span>New Loan</span>
-                </a>
+                </div>
                 <a href="/payments/new" class="quick-action-card">
                     <i class="fas fa-receipt"></i>
                     <span>Record Payment</span>
@@ -219,6 +359,72 @@
         <div class="loading-spinner">
             <i class="fas fa-spinner fa-spin"></i>
             <p>Loading dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Customer Selection Modal -->
+    <div class="modal fade" id="customerSelectionModal" tabindex="-1" aria-labelledby="customerSelectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerSelectionModalLabel">
+                        <i class="fas fa-users me-2"></i>
+                        Select Customer for New Loan
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Search Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="customerSearchInput" 
+                                       placeholder="Search by name, mobile number, or customer ID...">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Type at least 3 characters to search</small>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/customers/add" class="btn btn-success w-100">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Add New Customer
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Customer List -->
+                    <div id="customerList" class="row g-3 justify-content-center">
+                        <!-- Loading state will be inserted here -->
+                    </div>
+
+                    <!-- No Results Message -->
+                    <div id="noCustomersFound" class="text-center p-4 d-none">
+                        <i class="fas fa-user-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No customers found</h5>
+                        <p class="text-muted">Try adjusting your search criteria or add a new customer</p>
+                        <a href="/customers/add" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Add New Customer
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancel
+                    </button>
+                    <div class="text-muted">
+                        <small>Click on any customer to proceed with loan creation</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

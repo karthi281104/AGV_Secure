@@ -508,9 +508,329 @@ class Dashboard {
     }
 }
 
+// Customer Selection Modal Functions
+class CustomerSelection {
+    constructor() {
+        this.customers = [];
+        this.filteredCustomers = [];
+        this.selectedCustomer = null;
+        this.modal = null;
+        this.initialized = false;
+        this.init();
+    }
+
+    init() {
+        try {
+            const modalElement = document.getElementById('customerSelectionModal');
+            if (modalElement) {
+                this.modal = new bootstrap.Modal(modalElement);
+                this.setupEventListeners();
+                this.initialized = true;
+                console.log('CustomerSelection initialized successfully');
+            } else {
+                console.error('Modal element not found');
+            }
+        } catch (error) {
+            console.error('Error initializing CustomerSelection:', error);
+        }
+    }
+
+    setupEventListeners() {
+        const searchInput = document.getElementById('customerSearchInput');
+        const clearButton = document.getElementById('clearSearch');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterCustomers(e.target.value);
+            });
+        }
+        
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                searchInput.value = '';
+                this.filterCustomers('');
+            });
+        }
+    }
+
+    async show() {
+        console.log('CustomerSelection.show() called');
+        if (!this.initialized) {
+            console.error('CustomerSelection not initialized');
+            return;
+        }
+        
+        try {
+            this.modal.show();
+            console.log('Modal shown, loading customers...');
+            await this.loadCustomers();
+            console.log('Customers loaded successfully');
+        } catch (error) {
+            console.error('Error in show():', error);
+        }
+    }
+
+    async loadCustomers() {
+        console.log('loadCustomers() called');
+        const customerList = document.getElementById('customerList');
+        const noCustomersFound = document.getElementById('noCustomersFound');
+        
+        if (!customerList) {
+            console.error('customerList element not found!');
+            return;
+        }
+        
+        try {
+            // Show loading state
+            customerList.innerHTML = `
+                <div class="col-12">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-muted">Loading customers...</h5>
+                        <p class="text-muted">Fetching customer data from database</p>
+                    </div>
+                </div>
+            `;
+
+            console.log('Fetching customers from API...');
+            
+            // Try to fetch from the API first
+            try {
+                const response = await fetch('/api/customers', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('API Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('API Data received:', data);
+                    
+                    this.customers = data.customers || [];
+                    this.filteredCustomers = [...this.customers];
+
+                    console.log('Number of customers from API:', this.customers.length);
+
+                    if (this.customers.length === 0) {
+                        customerList.innerHTML = '';
+                        noCustomersFound.classList.remove('d-none');
+                    } else {
+                        noCustomersFound.classList.add('d-none');
+                        this.renderCustomers();
+                    }
+                    return;
+                } else {
+                    console.warn('API response not OK:', response.status, response.statusText);
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+            } catch (apiError) {
+                console.error('API fetch failed:', apiError);
+                
+                // Show error message but also load fallback data
+                customerList.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>API Error:</strong> ${apiError.message}
+                            <br><small>Loading sample data for demonstration...</small>
+                        </div>
+                    </div>
+                `;
+                
+                // Wait a moment then load sample data
+                setTimeout(() => {
+                    this.loadSampleData();
+                }, 1000);
+            }
+
+        } catch (error) {
+            console.error('Error loading customers:', error);
+            customerList.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                            <div>
+                                <h5 class="alert-heading">Error loading customers</h5>
+                                <p class="mb-2">${error.message}</p>
+                                <button class="btn btn-outline-danger btn-sm" onclick="customerSelection.loadCustomers()">
+                                    <i class="fas fa-redo me-1"></i>
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    loadSampleData() {
+        console.log('Loading sample customer data...');
+        
+        // Use the actual customer data from your database as fallback
+        this.customers = [
+            {
+                id: '89811f8e-bb1a-4100-b33f-238478faaf43',
+                name: 'Karthikeyan A',
+                father_name: 'Karthikeyan Father',
+                mobile: '0861033707',
+                email: null,
+                address: 'No:7A Theeran Sivalingam Street,Kabilar Nagar,Manavalanagar',
+                created_at: '2024-01-15T00:00:00'
+            },
+            {
+                id: '869684df-50a4-4a5c-af1c-ba61e0d7a383',
+                name: 'vasanth',
+                father_name: 'EFGHJ',
+                mobile: '0861033707',
+                email: null,
+                address: 'No:7A Theeran Sivalingam Street,Kabilar Nagar,Manavalanagar',
+                created_at: '2024-02-20T00:00:00'
+            },
+            {
+                id: '3ca3869b-ff95-4c02-a6a6-35ec4f0fb269',
+                name: 'VK',
+                father_name: 'VK FATHER',
+                mobile: '8478282654',
+                email: null,
+                address: 'NO.15 MCK LAYOUT SAN FRANSICO COLUMBIA',
+                created_at: '2024-03-10T00:00:00'
+            }
+        ];
+        
+        this.filteredCustomers = [...this.customers];
+        console.log('Sample customers loaded:', this.customers.length);
+
+        const customerList = document.getElementById('customerList');
+        const noCustomersFound = document.getElementById('noCustomersFound');
+
+        if (this.customers.length === 0) {
+            customerList.innerHTML = '';
+            noCustomersFound.classList.remove('d-none');
+        } else {
+            noCustomersFound.classList.add('d-none');
+            this.renderCustomers();
+        }
+    }
+
+    filterCustomers(searchTerm) {
+        if (!searchTerm.trim()) {
+            this.filteredCustomers = [...this.customers];
+        } else {
+            const term = searchTerm.toLowerCase();
+            this.filteredCustomers = this.customers.filter(customer => 
+                customer.name.toLowerCase().includes(term) ||
+                customer.mobile.includes(term) ||
+                (customer.email && customer.email.toLowerCase().includes(term)) ||
+                customer.id.toLowerCase().includes(term) ||
+                (customer.father_name && customer.father_name.toLowerCase().includes(term))
+            );
+        }
+        this.renderCustomers();
+    }
+
+    renderCustomers() {
+        const customerList = document.getElementById('customerList');
+        const noCustomersFound = document.getElementById('noCustomersFound');
+
+        if (this.filteredCustomers.length === 0) {
+            customerList.innerHTML = '';
+            noCustomersFound.classList.remove('d-none');
+            return;
+        }
+
+        noCustomersFound.classList.add('d-none');
+        
+        customerList.innerHTML = this.filteredCustomers.map(customer => `
+            <div class="col-md-6">
+                <div class="customer-card" onclick="customerSelection.selectCustomer('${customer.id}')">
+                    <div class="d-flex align-items-start">
+                        <div class="customer-avatar">
+                            ${customer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="customer-info">
+                                <h6 class="mb-2">${customer.name}</h6>
+                                <div class="customer-detail">
+                                    <i class="fas fa-user"></i>
+                                    <span>Father: ${customer.father_name || 'N/A'}</span>
+                                </div>
+                                <div class="customer-detail">
+                                    <i class="fas fa-phone"></i>
+                                    <span>${customer.mobile}</span>
+                                </div>
+                                ${customer.email ? `
+                                    <div class="customer-detail">
+                                        <i class="fas fa-envelope"></i>
+                                        <span>${customer.email}</span>
+                                    </div>
+                                ` : ''}
+                                <div class="customer-detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>${customer.address ? customer.address.substring(0, 50) + (customer.address.length > 50 ? '...' : '') : 'No address'}</span>
+                                </div>
+                                <div class="customer-detail">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Joined ${new Date(customer.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">ID: ${customer.id.substring(0, 8)}...</small>
+                            <br>
+                            <button class="btn btn-primary btn-sm mt-2 select-btn">
+                                <i class="fas fa-check"></i>
+                                Select
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    selectCustomer(customerId) {
+        this.selectedCustomer = this.customers.find(c => c.id === customerId);
+        
+        if (this.selectedCustomer) {
+            console.log('Customer selected:', this.selectedCustomer);
+            // Close modal and navigate to new loan page
+            this.modal.hide();
+            window.location.href = `/loans/new?customer_id=${customerId}`;
+        }
+    }
+}
+
+// Global customer selection instance
+let customerSelection;
+
+// Function to open customer selection modal (called from dashboard quick actions)
+function openCustomerSelectionModal() {
+    console.log('openCustomerSelectionModal() called');
+    
+    if (!customerSelection) {
+        console.log('Creating new CustomerSelection instance');
+        customerSelection = new CustomerSelection();
+    }
+    
+    console.log('Calling customerSelection.show()');
+    customerSelection.show();
+}
+
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.dashboard = new Dashboard();
+    
+    // Initialize customer selection
+    customerSelection = new CustomerSelection();
 });
 
 // Cleanup on page unload

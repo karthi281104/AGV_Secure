@@ -63,6 +63,25 @@ def requires_auth(f):
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+# FIXED: Add allowed file extensions for security
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def validate_file_upload(file, max_size_mb=5):
+    """Validate file upload with security checks"""
+    if not file or not file.filename:
+        return False, "No file selected"
+    
+    if not allowed_file(file.filename):
+        return False, f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+    
+    # Additional validation can be added here (virus scanning, etc.)
+    return True, "File is valid"
+
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -83,10 +102,28 @@ def login():
 
 @app.route("/callback", methods=["GET", "POST"])
 def callback():
-    token = oauth.auth0.authorize_access_token()
-    session["profile"] = token
-    next_url = session.pop('next_url', None)
-    return redirect(next_url or "/dashboard")
+    try:
+        token = oauth.auth0.authorize_access_token()
+        
+        # Validate token
+        if not token:
+            flash("Authentication failed. Please try again.", "error")
+            return redirect("/login")
+        
+        # Store user profile
+        session["profile"] = token
+        
+        # Get next URL or default to dashboard
+        next_url = session.pop('next_url', None)
+        
+        flash("Login successful!", "success")
+        return redirect(next_url or "/dashboard")
+        
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Authentication error: {e}")
+        flash("Authentication failed. Please try again.", "error")
+        return redirect("/login")
 
 
 @app.route("/logout")
@@ -225,20 +262,31 @@ def update_customer(customer_id):
 def create_customer():
     """Create new customer"""
     from models import Customer, db
+    from validators import CustomerValidator
 
     try:
         # Get form data
-        name = request.form.get('name')
-        mobile = request.form.get('mobile')
-        additional_mobile = request.form.get('additional_mobile')
-        father_name = request.form.get('father_name')
-        mother_name = request.form.get('mother_name')
-        address = request.form.get('address')
-        pan_number = request.form.get('pan_number')
-        aadhar_number = request.form.get('aadhar_number')
-        fingerprint_data = request.form.get('fingerprint_data')
+        form_data = {
+            'name': request.form.get('name'),
+            'mobile': request.form.get('mobile'),
+            'additional_mobile': request.form.get('additional_mobile'),
+            'father_name': request.form.get('father_name'),
+            'mother_name': request.form.get('mother_name'),
+            'email': request.form.get('email'),
+            'address': request.form.get('address'),
+            'pan_number': request.form.get('pan_number'),
+            'aadhar_number': request.form.get('aadhar_number'),
+            'fingerprint_data': request.form.get('fingerprint_data')
+        }
 
-        # Handle file uploads
+        # FIXED: Validate customer data using validator
+        is_valid, validation_errors = CustomerValidator.validate_customer_data(form_data)
+        if not is_valid:
+            for field, error in validation_errors.items():
+                flash(f"{field.replace('_', ' ').title()}: {error}", "error")
+            return redirect(url_for('add_customer'))
+
+        # Handle file uploads with validation - FIXED
         pan_photo = request.files.get('pan_photo')
         aadhar_photo = request.files.get('aadhar_photo')
 
@@ -247,41 +295,56 @@ def create_customer():
         document_metadata = {}
 
         if pan_photo and pan_photo.filename:
-            filename = secure_filename(f"pan_{name}_{pan_photo.filename}")
+            # Validate file
+            is_valid, error_msg = validate_file_upload(pan_photo)
+            if not is_valid:
+                flash(f"PAN photo error: {error_msg}", "error")
+                return redirect(url_for('add_customer'))
+                
+            filename = secure_filename(f"pan_{form_data['name']}_{pan_photo.filename}")
             pan_photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             pan_photo.save(pan_photo_path)
             pan_photo_url = f"uploads/{filename}"
             document_metadata["pan_document"] = {
                 "filename": filename,
                 "original_name": pan_photo.filename,
-                "upload_date": str(datetime.now())
+                "upload_date": str(datetime.now()),
+                "file_size": os.path.getsize(pan_photo_path)
             }
 
         if aadhar_photo and aadhar_photo.filename:
-            filename = secure_filename(f"aadhar_{name}_{aadhar_photo.filename}")
+            # Validate file
+            is_valid, error_msg = validate_file_upload(aadhar_photo)
+            if not is_valid:
+                flash(f"Aadhar photo error: {error_msg}", "error")
+                return redirect(url_for('add_customer'))
+                
+            filename = secure_filename(f"aadhar_{form_data['name']}_{aadhar_photo.filename}")
             aadhar_photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             aadhar_photo.save(aadhar_photo_path)
             aadhar_photo_url = f"uploads/{filename}"
             document_metadata["aadhar_document"] = {
                 "filename": filename,
                 "original_name": aadhar_photo.filename,
-                "upload_date": str(datetime.now())
+                "upload_date": str(datetime.now()),
+                "file_size": os.path.getsize(aadhar_photo_path)
             }
 
-        # Create new customer with corrected field names
+        # Create new customer with validated data
         new_customer = Customer(
-            name=name,
-            mobile=mobile,
-            additional_mobile=additional_mobile,
-            father_name=father_name,
-            mother_name=mother_name,
-            address=address,
-            pan_number=pan_number,
-            aadhar_number=aadhar_number,
-            pan_photo_url=pan_photo_url,  # Changed from pan_photo_path
-            aadhar_photo_url=aadhar_photo_url,  # Changed from aadhar_photo_path
+            name=form_data['name'],
+            mobile=form_data['mobile'],
+            additional_mobile=form_data['additional_mobile'],
+            father_name=form_data['father_name'],
+            mother_name=form_data['mother_name'],
+            email=form_data['email'],
+            address=form_data['address'],
+            pan_number=form_data['pan_number'],
+            aadhar_number=form_data['aadhar_number'],
+            pan_photo_url=pan_photo_url,
+            aadhar_photo_url=aadhar_photo_url,
             document_metadata=json.dumps(document_metadata) if document_metadata else None,
-            fingerprint_data=fingerprint_data
+            fingerprint_data=form_data['fingerprint_data']
         )
 
         db.session.add(new_customer)
@@ -372,6 +435,7 @@ def api_customers():
                 "name": customer.name,
                 "father_name": customer.father_name or "Not provided",
                 "mobile": customer.mobile,
+                "email": customer.email,
                 "aadhar_number": customer.aadhar_number or "Not provided",
                 "address": customer.address or "Not provided",
                 "created_at": customer.created_at.isoformat() if customer.created_at else None
@@ -504,17 +568,50 @@ def create_loan():
     from models import Customer, Loan
 
     try:
-        # Get customer ID
+        # Get customer ID and validate
         customer_id = request.form.get('customer_id')
         if not customer_id:
             flash("Customer selection is required", "danger")
             return redirect(url_for('new_loan'))
 
-        # Get form data
+        # Validate customer exists
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            flash("Selected customer not found", "danger")
+            return redirect(url_for('new_loan'))
+
+        # Get and validate form data
         principal_amount = request.form.get('principal_amount')
         interest_rate = request.form.get('interest_rate')
         tenure_months = request.form.get('tenure_months')
         loan_type = request.form.get('loan_type')
+
+        # FIXED: Add validation for required fields
+        if not all([principal_amount, interest_rate, tenure_months, loan_type]):
+            flash("All loan details are required", "danger")
+            return redirect(url_for('new_loan'))
+
+        # FIXED: Validate numeric values
+        try:
+            principal_amount = decimal.Decimal(str(principal_amount))
+            interest_rate = decimal.Decimal(str(interest_rate))
+            tenure_months = int(tenure_months)
+            
+            if principal_amount <= 0:
+                flash("Principal amount must be greater than zero", "danger")
+                return redirect(url_for('new_loan'))
+            
+            if interest_rate <= 0 or interest_rate > 100:
+                flash("Interest rate must be between 0 and 100", "danger")
+                return redirect(url_for('new_loan'))
+            
+            if tenure_months <= 0 or tenure_months > 360:  # Max 30 years
+                flash("Tenure must be between 1 and 360 months", "danger")
+                return redirect(url_for('new_loan'))
+                
+        except (ValueError, decimal.InvalidOperation):
+            flash("Invalid numeric values provided", "danger")
+            return redirect(url_for('new_loan'))
 
         # Surety information
         surety_name = request.form.get('surety_name')
@@ -1020,14 +1117,15 @@ def api_reports_performance_metrics():
         total_portfolio = db.session.query(func.sum(Loan.principal_amount)).scalar() or 0
         
         # Mock metrics - these could be calculated from actual data
+        total_portfolio_float = float(total_portfolio)
         metrics = {
             'approvalRate': 87.5,
             'processingTime': 2.8,
             'satisfaction': 94.2,
             'defaultRate': 1.8,
-            'totalPortfolio': float(total_portfolio),
-            'totalInterest': float(total_portfolio * 0.15),  # Assume 15% interest earned
-            'outstandingAmount': float(total_portfolio * 0.8),  # Assume 80% still outstanding
+            'totalPortfolio': total_portfolio_float,
+            'totalInterest': total_portfolio_float * 0.15,  # Assume 15% interest earned
+            'outstandingAmount': total_portfolio_float * 0.8,  # Assume 80% still outstanding
             'collectionRate': 92.3
         }
         
@@ -1195,19 +1293,39 @@ def create_payment():
         if not loan:
             return jsonify({"error": "Loan not found"}), 404
         
+        # FIXED: Validate amount
+        try:
+            amount = decimal.Decimal(str(data['amount']))
+            if amount <= 0:
+                return jsonify({"error": "Payment amount must be greater than zero"}), 400
+        except (ValueError, decimal.InvalidOperation):
+            return jsonify({"error": "Invalid payment amount"}), 400
+        
         # Generate payment number
         payment_count = Payment.query.count() + 1
         payment_number = f"PAY{payment_count:06d}"
+        
+        # FIXED: Parse interest amount and payment type
+        interest_amount = decimal.Decimal(str(data.get('interest_amount', 0)))
+        payment_type = data.get('payment_type', 'principal')
+        
+        # FIXED: Validate payment date
+        try:
+            payment_date = datetime.fromisoformat(data['payment_date'].replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({"error": "Invalid payment date format"}), 400
         
         # Create payment
         payment = Payment(
             loan_id=data['loan_id'],
             payment_number=payment_number,
-            amount=decimal.Decimal(str(data['amount'])),
-            payment_date=datetime.fromisoformat(data['payment_date'].replace('Z', '+00:00')),
+            amount=amount,
+            payment_date=payment_date,
             payment_method=data['payment_method'],
             transaction_id=data.get('transaction_id'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            interest_amount=interest_amount,
+            payment_type=payment_type
         )
         
         db.session.add(payment)
@@ -1218,7 +1336,9 @@ def create_payment():
             "payment": {
                 "id": str(payment.id),
                 "payment_number": payment.payment_number,
-                "amount": float(payment.amount)
+                "amount": float(payment.amount),
+                "interest_amount": float(payment.interest_amount),
+                "payment_type": payment.payment_type
             }
         }), 201
         

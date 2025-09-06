@@ -416,6 +416,44 @@
 
             let searchTimeout;
 
+            // Check for customer_id URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const customerId = urlParams.get('customer_id');
+            
+            if (customerId) {
+                loadCustomerById(customerId);
+            }
+
+            // Load customer by ID function
+            function loadCustomerById(id) {
+                fetch(`/api/customers/${id}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        // The API returns customer data directly, not wrapped in a customer property
+                        selectCustomer(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading customer:', error);
+                        // Show error message but allow manual search
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'alert alert-warning alert-dismissible fade show';
+                        errorDiv.innerHTML = `
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Could not load the selected customer. Please search manually.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        searchInput.parentNode.insertBefore(errorDiv, searchInput);
+                    });
+            }
+
             // Search functionality
             function performSearch() {
                 const query = searchInput.value.trim();
