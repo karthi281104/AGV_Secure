@@ -1,0 +1,48 @@
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <i class="fas fa-university"></i>
+            <span>AGV Finance</span>
+        </div>
+        <div class="sidebar-subtitle">Employee Portal</div>
+    </div>
+
+    <div class="sidebar-nav">
+        <a href="/dashboard" class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/customers" class="nav-link {{ 'active' if request.endpoint == 'customers' else '' }}">
+            <i class="fas fa-users"></i>
+            <span>Customers</span>
+        </a>
+        <a href="/loans" class="nav-link {{ 'active' if request.endpoint == 'loans' else '' }}">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Loan Management</span>
+        </a>
+        <a href="/payments" class="nav-link {{ 'active' if request.endpoint == 'payments' else '' }}">
+            <i class="fas fa-hand-holding-usd"></i>
+            <span>Payments</span>
+        </a>
+        <a href="/reports" class="nav-link {{ 'active' if request.endpoint == 'reports' else '' }}">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+        </a>
+        <a href="/calculators/gold" class="nav-link {{ 'active' if request.endpoint in ['gold', 'emi', 'gold_cov'] else '' }}">
+            <i class="fas fa-calculator"></i>
+            <span>Calculators</span>
+        </a>
+        <a href="/settings" class="nav-link {{ 'active' if request.endpoint == 'settings' else '' }}">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </div>
+
+    <div class="sidebar-footer">
+        <a href="/logout" class="nav-link logout-link">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</nav>

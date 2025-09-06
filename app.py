@@ -8,12 +8,13 @@ from functools import wraps
 from extensions import db
 import os
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 import base64
 import uuid
 import random
 import string
-from sqlalchemy import or_
+import decimal
+from sqlalchemy import or_, func
 from dateutil.relativedelta import relativedelta
 
 # Load environment variables
@@ -106,11 +107,6 @@ def logout():
 
 ## PROTECTED ROUTES
 
-@app.route("/test-dashboard")
-def test_dashboard():
-    """Test dashboard without authentication"""
-    return render_template("dashboard.html", userinfo={'name': 'Test User', 'picture': 'https://via.placeholder.com/40'})
-
 @app.route("/dashboard")
 @requires_auth
 def dashboard():
@@ -171,6 +167,57 @@ def customers():
 def add_customer():
     """Add new customer page"""
     return render_template("add_customer.html", userinfo=session.get('profile'))
+
+
+@app.route("/customers/edit/<customer_id>")
+@requires_auth
+def edit_customer(customer_id):
+    """Edit customer page"""
+    from models import Customer
+    
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for('customers'))
+        
+        return render_template("edit_customer.html", customer=customer, userinfo=session.get('profile'))
+    except Exception as e:
+        flash(f"Error loading customer: {e}", "error")
+        return redirect(url_for('customers'))
+
+
+@app.route("/customers/update/<customer_id>", methods=["POST"])
+@requires_auth
+def update_customer(customer_id):
+    """Update customer information"""
+    from models import Customer, db
+    
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for('customers'))
+        
+        # Update customer fields
+        customer.name = request.form.get('name')
+        customer.mobile = request.form.get('mobile')
+        customer.additional_mobile = request.form.get('additional_mobile')
+        customer.father_name = request.form.get('father_name')
+        customer.mother_name = request.form.get('mother_name')
+        customer.email = request.form.get('email')
+        customer.address = request.form.get('address')
+        customer.pan_number = request.form.get('pan_number')
+        customer.aadhar_number = request.form.get('aadhar_number')
+        
+        db.session.commit()
+        flash("Customer updated successfully!", "success")
+        return redirect(url_for('customers'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error updating customer: {e}", "error")
+        return redirect(url_for('customers'))
 
 
 @app.route("/customers/create", methods=["POST"])
@@ -252,7 +299,7 @@ def create_customer():
 @app.route("/reports")
 @requires_auth
 def reports():
-    return render_template("reports.html")
+    return render_template("reports.html", userinfo=session.get('profile'))
 
 
 @app.route("/settings")
@@ -280,74 +327,9 @@ def new_loan():
     return render_template("new_loan.html", userinfo=session.get('profile'))
 
 
-@app.route("/test-new-loan")
-def test_new_loan():
-    """Test new loan page without authentication"""
-    return render_template("new_loan.html", userinfo={'name': 'Test User', 'picture': 'https://via.placeholder.com/40'})
-
-@app.route("/test-api/customers")
-def test_api_customers():
-    """Test API endpoint to get all customers without authentication"""
-    from models import Customer
-    
-    # Get query parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    search_query = request.args.get('q', '')
-    
-    try:
-        # Base query
-        query = Customer.query
-        
-        # Apply search filter if provided
-        if search_query and len(search_query) >= 3:
-            query = query.filter(
-                or_(
-                    Customer.name.ilike(f"%{search_query}%"),
-                    Customer.mobile.ilike(f"%{search_query}%"),
-                    Customer.father_name.ilike(f"%{search_query}%"),
-                    Customer.aadhar_number.ilike(f"%{search_query}%")
-                )
-            )
-        
-        # Order by creation date (newest first)
-        query = query.order_by(Customer.created_at.desc())
-        
-        # Paginate
-        customers_pagination = query.paginate(
-            page=page, 
-            per_page=per_page, 
-            error_out=False
-        )
-        
-        customers = customers_pagination.items
-        
-        results = []
-        for customer in customers:
-            results.append({
-                "id": str(customer.id),
-                "name": customer.name,
-                "father_name": customer.father_name or "Not provided",
-                "mobile": customer.mobile,
-                "aadhar_number": customer.aadhar_number or "Not provided",
-                "address": customer.address or "Not provided",
-                "created_at": customer.created_at.isoformat() if customer.created_at else None
-            })
-
-        return jsonify({
-            "customers": results,
-            "pagination": {
-                "page": page,
-                "per_page": per_page,
-                "total": customers_pagination.total,
-                "pages": customers_pagination.pages,
-                "has_next": customers_pagination.has_next,
-                "has_prev": customers_pagination.has_prev
-            }
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route("/api/customers")
+@requires_auth
+def api_customers():
     """API endpoint to get all customers with pagination and search"""
     from models import Customer
     
@@ -411,39 +393,77 @@ def test_api_customers():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/test-loans/search-customer")
-def test_search_customer():
-    """Test API endpoint to search for customers without authentication"""
+@app.route("/api/customers/<customer_id>")
+@requires_auth
+def api_customer_details(customer_id):
+    """API endpoint to get detailed customer information"""
     from models import Customer
-    query = request.args.get('q', '')
-
-    if len(query) < 3:
-        return jsonify({"error": "Query must be at least 3 characters"}), 400
-
+    
     try:
-        # Search for customers by name, mobile or father's name
-        customers = Customer.query.filter(
-            or_(
-                Customer.name.ilike(f"%{query}%"),
-                Customer.mobile.ilike(f"%{query}%"),
-                Customer.father_name.ilike(f"%{query}%")
-            )
-        ).limit(10).all()
-
-        results = []
-        for customer in customers:
-            results.append({
-                "id": str(customer.id),
-                "name": customer.name,
-                "father_name": customer.father_name or "Not provided",
-                "mobile": customer.mobile,
-                "address": customer.address or "Not provided"
-            })
-
-        return jsonify({"customers": results})
-
+        customer = Customer.query.get(customer_id)
+        
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+        
+        customer_data = {
+            "id": str(customer.id),
+            "name": customer.name,
+            "mobile": customer.mobile,
+            "additional_mobile": customer.additional_mobile,
+            "father_name": customer.father_name,
+            "mother_name": customer.mother_name,
+            "email": customer.email,
+            "address": customer.address,
+            "aadhar_number": customer.aadhar_number,
+            "pan_number": customer.pan_number,
+            "created_at": customer.created_at.isoformat() if customer.created_at else None,
+            "updated_at": customer.updated_at.isoformat() if customer.updated_at else None,
+            "loans": [
+                {
+                    "id": str(loan.id),
+                    "amount": float(loan.amount),
+                    "status": loan.status,
+                    "created_at": loan.created_at.isoformat() if loan.created_at else None
+                } for loan in customer.loans
+            ] if customer.loans else []
+        }
+        
+        return jsonify(customer_data)
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/customers/<customer_id>", methods=["DELETE"])
+@requires_auth
+def api_delete_customer(customer_id):
+    """API endpoint to delete a customer"""
+    from models import Customer, db
+    
+    try:
+        customer = Customer.query.get(customer_id)
+        
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+        
+        # Check if customer has active loans
+        if customer.loans:
+            return jsonify({"error": "Cannot delete customer with active loans"}), 400
+        
+        # Delete the customer
+        db.session.delete(customer)
+        db.session.commit()
+        
+        return jsonify({"success": True, "message": "Customer deleted successfully"})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/loans/search-customer")
+@requires_auth
+def loans_search_customer():
     """API endpoint to search for customers (legacy endpoint for compatibility)"""
     from models import Customer
     query = request.args.get('q', '')
@@ -669,21 +689,34 @@ def api_dashboard_stats():
         ).scalar()
         total_interest = float(interest_result) if interest_result else 0
         
-        # Sample monthly data (in real app, this would query actual monthly disbursements)
-        monthly_data = [
-            {'month': i, 'amount': total_disbursed / 6 + (i * 100000)} 
-            for i in range(1, 7)
-        ]
+        # Calculate actual monthly data from the last 6 months
+        monthly_data = []
+        for i in range(6, 0, -1):
+            month_start = datetime.utcnow().replace(day=1) - relativedelta(months=i-1)
+            month_end = month_start + relativedelta(months=1) - relativedelta(days=1)
+            
+            month_disbursed = db.session.query(db.func.sum(Loan.principal_amount)).filter(
+                Loan.disbursed_date >= month_start,
+                Loan.disbursed_date <= month_end
+            ).scalar() or 0
+            
+            monthly_data.append({
+                'month': 7-i,
+                'amount': float(month_disbursed)
+            })
         
-        # Sample loan types distribution
-        loan_types = [
-            {'type': 'Gold Loans', 'count': int(total_loans * 0.45), 'percentage': 45},
-            {'type': 'Personal Loans', 'count': int(total_loans * 0.25), 'percentage': 25},
-            {'type': 'Business Loans', 'count': int(total_loans * 0.20), 'percentage': 20},
-            {'type': 'Vehicle Loans', 'count': int(total_loans * 0.10), 'percentage': 10}
-        ]
+        # Calculate actual loan types distribution
+        loan_types = []
+        for loan_type in ['gold', 'personal', 'business', 'vehicle']:
+            count = db.session.query(Loan).filter(Loan.loan_type == loan_type).count()
+            percentage = (count / total_loans * 100) if total_loans > 0 else 0
+            loan_types.append({
+                'type': f'{loan_type.title()} Loans',
+                'count': count,
+                'percentage': round(percentage, 1)
+            })
         
-        # Sample recent activity (latest 5 loans and payments)
+        # Get actual recent loans (latest 5)
         recent_loans = []
         loans_query = db.session.query(Loan, Customer).join(Customer).order_by(Loan.disbursed_date.desc()).limit(5).all()
         for loan, customer in loans_query:
@@ -692,26 +725,11 @@ def api_dashboard_stats():
                 'customer': customer.name,
                 'amount': float(loan.principal_amount),
                 'type': loan.loan_type.title(),
-                'date': loan.disbursed_date.isoformat() if loan.disbursed_date else (datetime.utcnow() - relativedelta(hours=2)).isoformat()
+                'date': loan.disbursed_date.isoformat() if loan.disbursed_date else datetime.utcnow().isoformat()
             })
         
-        # For payments, we would need a Payment model, so using sample data with recent dates
-        recent_payments = [
-            {
-                'id': 'P001', 
-                'customer': 'Sample Customer', 
-                'amount': 50000, 
-                'loan_id': 'L001', 
-                'date': (datetime.utcnow() - relativedelta(hours=1)).isoformat()
-            },
-            {
-                'id': 'P002', 
-                'customer': 'Another Customer', 
-                'amount': 25000, 
-                'loan_id': 'L002', 
-                'date': (datetime.utcnow() - relativedelta(hours=3)).isoformat()
-            }
-        ]
+        # For payments, we would need a Payment model - for now return empty
+        recent_payments = []
         
         return jsonify({
             'total_customers': total_customers,
@@ -730,39 +748,21 @@ def api_dashboard_stats():
         
     except Exception as e:
         print(f"Error in dashboard stats: {e}")
-        # Return sample data in case of database issues
+        # Return minimal data structure in case of database issues
         return jsonify({
-            'total_customers': 1250,
-            'total_disbursed': 75000000,
-            'total_interest': 12500000,
-            'active_loans': 387,
-            'customers_change': 12.5,
-            'disbursed_change': 8.3,
-            'interest_change': 15.2,
-            'loans_change': -2.1,
-            'monthlyData': [
-                {'month': 1, 'amount': 4500000},
-                {'month': 2, 'amount': 5200000},
-                {'month': 3, 'amount': 4800000},
-                {'month': 4, 'amount': 6100000},
-                {'month': 5, 'amount': 5800000},
-                {'month': 6, 'amount': 7200000}
-            ],
-            'loanTypes': [
-                {'type': 'Gold Loans', 'count': 174, 'percentage': 45},
-                {'type': 'Personal Loans', 'count': 97, 'percentage': 25},
-                {'type': 'Business Loans', 'count': 77, 'percentage': 20},
-                {'type': 'Vehicle Loans', 'count': 39, 'percentage': 10}
-            ],
-            'recentLoans': [
-                {'id': 'L001', 'customer': 'John Doe', 'amount': 500000, 'type': 'Gold', 'date': (datetime.utcnow() - relativedelta(hours=2)).isoformat()},
-                {'id': 'L002', 'customer': 'Jane Smith', 'amount': 250000, 'type': 'Personal', 'date': (datetime.utcnow() - relativedelta(hours=5)).isoformat()}
-            ],
-            'recentPayments': [
-                {'id': 'P001', 'customer': 'Alice Johnson', 'amount': 50000, 'loan_id': 'L001', 'date': (datetime.utcnow() - relativedelta(hours=1)).isoformat()},
-                {'id': 'P002', 'customer': 'Bob Wilson', 'amount': 25000, 'loan_id': 'L002', 'date': (datetime.utcnow() - relativedelta(hours=4)).isoformat()}
-            ]
-        })
+            'total_customers': 0,
+            'total_disbursed': 0,
+            'total_interest': 0,
+            'active_loans': 0,
+            'customers_change': 0,
+            'disbursed_change': 0,
+            'interest_change': 0,
+            'loans_change': 0,
+            'monthlyData': [],
+            'loanTypes': [],
+            'recentLoans': [],
+            'recentPayments': []
+        }), 500
 
 
 @app.route("/api/user/profile")
@@ -791,6 +791,481 @@ def api_user_profile():
             'role': 'Loan Officer',
             'avatar': 'https://ui-avatars.com/api/?name=Employee&background=667eea&color=fff&size=128'
         }), 200
+
+
+# Reports API Endpoints
+@app.route("/api/reports/metrics")
+@requires_auth
+def api_reports_metrics():
+    """API endpoint to get key performance metrics for reports"""
+    try:
+        from models import Customer, Loan
+        from sqlalchemy import func, extract
+        from datetime import datetime, timedelta
+        
+        # Get date range from query parameters
+        from_date = request.args.get('from')
+        to_date = request.args.get('to')
+        
+        if from_date:
+            from_date = datetime.strptime(from_date, '%Y-%m-%d')
+        if to_date:
+            to_date = datetime.strptime(to_date, '%Y-%m-%d')
+        
+        # Calculate total loans amount
+        loans_query = Loan.query
+        if from_date and to_date:
+            loans_query = loans_query.filter(
+                Loan.disbursed_date >= from_date,
+                Loan.disbursed_date <= to_date
+            )
+        
+        total_loans_amount = db.session.query(func.sum(Loan.principal_amount)).scalar() or 0
+        
+        # Calculate total customers
+        customers_query = Customer.query
+        if from_date and to_date:
+            customers_query = customers_query.filter(
+                Customer.created_at >= from_date,
+                Customer.created_at <= to_date
+            )
+        
+        total_customers = customers_query.count()
+        
+        # Calculate average interest rate
+        avg_interest = db.session.query(func.avg(Loan.interest_rate)).scalar() or 0
+        
+        # Calculate monthly growth (mock calculation)
+        monthly_growth = 12.5  # This could be calculated based on historical data
+        
+        return jsonify({
+            'totalLoansAmount': float(total_loans_amount),
+            'totalCustomers': total_customers,
+            'averageInterest': float(avg_interest),
+            'monthlyGrowth': monthly_growth,
+            'loansGrowth': 15.2,
+            'customersGrowth': 8.7,
+            'interestChange': -0.2,
+            'growthChange': 2.1
+        })
+        
+    except Exception as e:
+        print(f"Error in reports metrics: {e}")
+        return jsonify({
+            'totalLoansAmount': 0,
+            'totalCustomers': 0,
+            'averageInterest': 0,
+            'monthlyGrowth': 0
+        }), 500
+
+
+@app.route("/api/reports/charts")
+@requires_auth
+def api_reports_charts():
+    """API endpoint to get chart data for reports"""
+    try:
+        from models import Loan
+        from sqlalchemy import func, extract
+        from datetime import datetime, timedelta
+        
+        # Get date range
+        from_date = request.args.get('from')
+        to_date = request.args.get('to')
+        
+        # Loan trend data (monthly aggregation)
+        loan_trend = []
+        if from_date and to_date:
+            trend_query = db.session.query(
+                func.date_trunc('month', Loan.disbursed_date).label('month'),
+                func.sum(Loan.principal_amount).label('total_amount')
+            ).filter(
+                Loan.disbursed_date >= from_date,
+                Loan.disbursed_date <= to_date
+            ).group_by(
+                func.date_trunc('month', Loan.disbursed_date)
+            ).all()
+            
+            for row in trend_query:
+                loan_trend.append({
+                    'date': row.month.strftime('%Y-%m'),
+                    'amount': float(row.total_amount or 0)
+                })
+        
+        # Loan types distribution
+        loan_types_query = db.session.query(
+            Loan.loan_type,
+            func.count(Loan.id).label('count'),
+            func.sum(Loan.principal_amount).label('total_amount')
+        ).group_by(Loan.loan_type).all()
+        
+        loan_types = []
+        for row in loan_types_query:
+            loan_types.append({
+                'type': row.loan_type or 'Unknown',
+                'count': row.count,
+                'amount': float(row.total_amount or 0)
+            })
+        
+        return jsonify({
+            'loanTrend': loan_trend,
+            'loanTypes': loan_types,
+            'financialOverview': []  # This could be expanded with more complex calculations
+        })
+        
+    except Exception as e:
+        print(f"Error in reports charts: {e}")
+        return jsonify({
+            'loanTrend': [],
+            'loanTypes': [],
+            'financialOverview': []
+        }), 500
+
+
+@app.route("/api/reports/loans-summary")
+@requires_auth
+def api_reports_loans_summary():
+    """API endpoint to get loans summary for reports table"""
+    try:
+        from models import Customer, Loan
+        
+        loans = db.session.query(Loan, Customer).join(
+            Customer, Loan.customer_id == Customer.id
+        ).order_by(Loan.disbursed_date.desc()).limit(50).all()
+        
+        loans_data = []
+        for loan, customer in loans:
+            loans_data.append({
+                'id': str(loan.id),
+                'loan_number': loan.loan_number,
+                'customer_name': customer.name,
+                'customer_mobile': customer.mobile,
+                'principal_amount': float(loan.principal_amount),
+                'interest_rate': float(loan.interest_rate),
+                'tenure_months': loan.tenure_months,
+                'disbursed_date': loan.disbursed_date.isoformat(),
+                'status': 'Active'  # You could add a status field to the Loan model
+            })
+        
+        return jsonify(loans_data)
+        
+    except Exception as e:
+        print(f"Error in loans summary: {e}")
+        return jsonify([]), 500
+
+
+@app.route("/api/reports/customer-analysis")
+@requires_auth
+def api_reports_customer_analysis():
+    """API endpoint to get customer analysis data"""
+    try:
+        from models import Customer, Loan
+        from sqlalchemy import func
+        
+        # Customer statistics with loan aggregations
+        customer_stats = db.session.query(
+            Customer.id,
+            Customer.name,
+            Customer.mobile,
+            func.count(Loan.id).label('total_loans'),
+            func.sum(Loan.principal_amount).label('total_amount'),
+            func.max(Loan.disbursed_date).label('last_loan_date')
+        ).outerjoin(Loan).group_by(Customer.id, Customer.name, Customer.mobile).all()
+        
+        customers_data = []
+        for row in customer_stats:
+            customers_data.append({
+                'id': str(row.id),
+                'name': row.name,
+                'mobile': row.mobile,
+                'total_loans': row.total_loans or 0,
+                'total_amount': float(row.total_amount or 0),
+                'last_loan_date': row.last_loan_date.isoformat() if row.last_loan_date else None,
+                'credit_score': 750,  # Mock credit score
+                'status': 'Active'
+            })
+        
+        # Summary stats
+        total_customers = Customer.query.count()
+        new_customers = Customer.query.filter(
+            Customer.created_at >= datetime.now() - timedelta(days=30)
+        ).count()
+        active_customers = db.session.query(Customer).join(Loan).distinct().count()
+        avg_loan_size = db.session.query(func.avg(Loan.principal_amount)).scalar() or 0
+        
+        return jsonify({
+            'customers': customers_data[:20],  # Limit to 20 for display
+            'stats': {
+                'newCustomers': new_customers,
+                'activeCustomers': active_customers,
+                'averageLoanSize': float(avg_loan_size)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in customer analysis: {e}")
+        return jsonify({
+            'customers': [],
+            'stats': {'newCustomers': 0, 'activeCustomers': 0, 'averageLoanSize': 0}
+        }), 500
+
+
+@app.route("/api/reports/performance-metrics")
+@requires_auth
+def api_reports_performance_metrics():
+    """API endpoint to get performance metrics"""
+    try:
+        from models import Loan
+        
+        # Calculate portfolio value
+        total_portfolio = db.session.query(func.sum(Loan.principal_amount)).scalar() or 0
+        
+        # Mock metrics - these could be calculated from actual data
+        metrics = {
+            'approvalRate': 87.5,
+            'processingTime': 2.8,
+            'satisfaction': 94.2,
+            'defaultRate': 1.8,
+            'totalPortfolio': float(total_portfolio),
+            'totalInterest': float(total_portfolio * 0.15),  # Assume 15% interest earned
+            'outstandingAmount': float(total_portfolio * 0.8),  # Assume 80% still outstanding
+            'collectionRate': 92.3
+        }
+        
+        return jsonify(metrics)
+        
+    except Exception as e:
+        print(f"Error in performance metrics: {e}")
+        return jsonify({
+            'approvalRate': 0, 'processingTime': 0, 'satisfaction': 0,
+            'defaultRate': 0, 'totalPortfolio': 0, 'totalInterest': 0,
+            'outstandingAmount': 0, 'collectionRate': 0
+        }), 500
+
+
+# Payments Routes
+@app.route('/payments')
+@requires_auth
+def payments():
+    """Payments management page"""
+    return render_template(
+        "payments.html",
+        userinfo=session.get('profile')
+    )
+
+
+@app.route('/api/payments')
+@requires_auth
+def api_payments():
+    """API endpoint to get all payments with pagination and search"""
+    from models import Payment, Loan, Customer
+    
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search_query = request.args.get('q', '')
+    loan_id = request.args.get('loan_id', '')
+    
+    try:
+        # Base query with joins
+        query = db.session.query(Payment)\
+            .join(Loan, Payment.loan_id == Loan.id)\
+            .join(Customer, Loan.customer_id == Customer.id)
+        
+        # Apply search filter if provided
+        if search_query and len(search_query) >= 3:
+            query = query.filter(
+                or_(
+                    Payment.payment_number.ilike(f"%{search_query}%"),
+                    Customer.name.ilike(f"%{search_query}%"),
+                    Customer.mobile.ilike(f"%{search_query}%"),
+                    Payment.transaction_id.ilike(f"%{search_query}%")
+                )
+            )
+        
+        # Filter by loan if provided
+        if loan_id:
+            query = query.filter(Payment.loan_id == loan_id)
+        
+        # Order by payment date (newest first)
+        query = query.order_by(Payment.payment_date.desc())
+        
+        # Paginate
+        payments_pagination = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        payments = payments_pagination.items
+        
+        results = []
+        for payment in payments:
+            results.append({
+                "id": str(payment.id),
+                "payment_number": payment.payment_number,
+                "amount": float(payment.amount),
+                "payment_date": payment.payment_date.isoformat() if payment.payment_date else None,
+                "payment_method": payment.payment_method,
+                "transaction_id": payment.transaction_id,
+                "notes": payment.notes,
+                "loan": {
+                    "id": str(payment.loan.id),
+                    "loan_number": payment.loan.loan_number,
+                    "customer_name": payment.loan.customer.name,
+                    "customer_mobile": payment.loan.customer.mobile
+                },
+                "created_at": payment.created_at.isoformat() if payment.created_at else None
+            })
+
+        return jsonify({
+            "payments": results,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": payments_pagination.total,
+                "pages": payments_pagination.pages,
+                "has_next": payments_pagination.has_next,
+                "has_prev": payments_pagination.has_prev
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/payments/<payment_id>')
+@requires_auth
+def api_payment_detail(payment_id):
+    """API endpoint to get payment details"""
+    from models import Payment
+    
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+        
+        return jsonify({
+            "id": str(payment.id),
+            "payment_number": payment.payment_number,
+            "amount": float(payment.amount),
+            "payment_date": payment.payment_date.isoformat() if payment.payment_date else None,
+            "payment_method": payment.payment_method,
+            "transaction_id": payment.transaction_id,
+            "notes": payment.notes,
+            "loan": {
+                "id": str(payment.loan.id),
+                "loan_number": payment.loan.loan_number,
+                "customer_name": payment.loan.customer.name,
+                "customer_mobile": payment.loan.customer.mobile,
+                "principal_amount": float(payment.loan.principal_amount)
+            },
+            "created_at": payment.created_at.isoformat() if payment.created_at else None,
+            "updated_at": payment.updated_at.isoformat() if payment.updated_at else None
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/payments/new')
+@requires_auth
+def new_payment():
+    """New payment recording page"""
+    return render_template(
+        "new_payment.html",
+        userinfo=session.get('profile')
+    )
+
+
+@app.route('/api/payments', methods=['POST'])
+@requires_auth
+def create_payment():
+    """API endpoint to create a new payment"""
+    from models import Payment, Loan
+    
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['loan_id', 'amount', 'payment_date', 'payment_method']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Verify loan exists
+        loan = Loan.query.get(data['loan_id'])
+        if not loan:
+            return jsonify({"error": "Loan not found"}), 404
+        
+        # Generate payment number
+        payment_count = Payment.query.count() + 1
+        payment_number = f"PAY{payment_count:06d}"
+        
+        # Create payment
+        payment = Payment(
+            loan_id=data['loan_id'],
+            payment_number=payment_number,
+            amount=decimal.Decimal(str(data['amount'])),
+            payment_date=datetime.fromisoformat(data['payment_date'].replace('Z', '+00:00')),
+            payment_method=data['payment_method'],
+            transaction_id=data.get('transaction_id'),
+            notes=data.get('notes')
+        )
+        
+        db.session.add(payment)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Payment recorded successfully",
+            "payment": {
+                "id": str(payment.id),
+                "payment_number": payment.payment_number,
+                "amount": float(payment.amount)
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/loans/search')
+@requires_auth
+def api_loans_search():
+    """API endpoint to search for loans (for payment forms)"""
+    from models import Loan, Customer
+    
+    query = request.args.get('q', '')
+    
+    if not query or len(query) < 3:
+        return jsonify({"loans": []})
+    
+    try:
+        loans = db.session.query(Loan)\
+            .join(Customer, Loan.customer_id == Customer.id)\
+            .filter(
+                or_(
+                    Loan.loan_number.ilike(f"%{query}%"),
+                    Customer.name.ilike(f"%{query}%"),
+                    Customer.mobile.ilike(f"%{query}%")
+                )
+            )\
+            .limit(10)\
+            .all()
+        
+        results = []
+        for loan in loans:
+            results.append({
+                "id": str(loan.id),
+                "loan_number": loan.loan_number,
+                "customer_name": loan.customer.name,
+                "customer_mobile": loan.customer.mobile,
+                "principal_amount": float(loan.principal_amount),
+                "status": loan.status
+            })
+        
+        return jsonify({"loans": results})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':

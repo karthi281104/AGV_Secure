@@ -18,7 +18,7 @@ class CustomerSelectionModal {
         this.bindEvents();
     }
 
-    createModal() {0
+    createModal() {
         // Create modal HTML
         const modalHTML = `
         <div class="modal fade" id="customerSelectionModal" tabindex="-1" aria-labelledby="customerSelectionModalLabel" aria-hidden="true">
@@ -171,7 +171,7 @@ class CustomerSelectionModal {
                 params.append('q', this.searchQuery);
             }
 
-            const response = await fetch(`/test-api/customers?${params}`);
+            const response = await fetch(`/api/customers?${params}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -245,19 +245,34 @@ class CustomerSelectionModal {
         const customerCards = document.querySelectorAll('.customer-card');
         const proceedButton = document.getElementById('proceedWithCustomer');
 
+        console.log('Binding events for', customerCards.length, 'customer cards');
+
         customerCards.forEach(card => {
             const radio = card.querySelector('.customer-radio');
             
             // Click on card selects the customer
             card.addEventListener('click', (e) => {
-                if (e.target !== radio) {
-                    radio.checked = true;
-                    radio.dispatchEvent(new Event('change'));
-                }
+                console.log('Customer card clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Select the radio button
+                radio.checked = true;
+                
+                // Trigger change event
+                const changeEvent = new Event('change', { bubbles: true });
+                radio.dispatchEvent(changeEvent);
+            });
+
+            // Also handle radio button clicks directly
+            radio.addEventListener('click', (e) => {
+                console.log('Radio button clicked directly');
+                e.stopPropagation();
             });
 
             // Handle radio button changes
             radio.addEventListener('change', () => {
+                console.log('Radio button changed');
                 if (radio.checked) {
                     // Remove previous selection styling
                     document.querySelectorAll('.customer-card .card').forEach(c => {
@@ -275,6 +290,7 @@ class CustomerSelectionModal {
 
                     // Enable proceed button
                     proceedButton.disabled = false;
+                    console.log('Customer selected:', this.selectedCustomer);
                 }
             });
         });

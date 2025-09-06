@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 import uuid
+import decimal
 from typing import Optional
 from extensions import db
 
@@ -59,6 +60,7 @@ class Loan(db.Model):
     disbursed_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     maturity_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     loan_type: Mapped[str] = mapped_column(String(50), default='gold')
+    status: Mapped[str] = mapped_column(String(20), default='active')  # active, completed, overdue, closed
     collateral_details: Mapped[Optional[dict]] = mapped_column(JSON)
     document_urls: Mapped[Optional[dict]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -78,7 +80,13 @@ class Payment(db.Model):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     loan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('loans.id'), nullable=False)
     payment_number: Mapped[str] = mapped_column(String(20), nullable=False)
-    # Add your other Payment fields here
+    amount: Mapped[decimal.Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    payment_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    payment_method: Mapped[str] = mapped_column(String(50), nullable=False)  # cash, bank_transfer, cheque, etc.
+    transaction_id: Mapped[Optional[str]] = mapped_column(String(100))
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=datetime.utcnow)
 
     # Relationships
     loan: Mapped["Loan"] = relationship(back_populates="payments")
