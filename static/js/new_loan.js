@@ -9,6 +9,7 @@ class CustomerSelectionModal {
         this.searchQuery = '';
         this.selectedCustomer = null;
         this.isLoading = false;
+        this.modal = null;
         
         this.init();
     }

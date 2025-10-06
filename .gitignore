@@ -4,6 +4,10 @@
 .directory
 .idea
 
+# Virtual environments
+venv/
+env/
+
 # Database files
 *.db
 agv_secure.db
